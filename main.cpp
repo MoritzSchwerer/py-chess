@@ -1,8 +1,8 @@
 #include <vector>
 #include <iostream>
 
-#include "types.h"
-#include "movegen.h"
+#include "types.hpp"
+#include "movegen.hpp"
 
 void to_binary(Bitboard board) {
     for (int i = 63; i >= 0; i--) {

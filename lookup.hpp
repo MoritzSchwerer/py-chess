@@ -2,8 +2,9 @@
 #include <array>
 #include <immintrin.h>
 #include <iostream>
-#include "types.h"
-#include "constants.h"
+
+#include "types.hpp"
+#include "constants.hpp"
 
 void to_binary_(Bitboard board) {
     for (int i = 63; i >= 0; i--) {

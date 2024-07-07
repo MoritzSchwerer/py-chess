@@ -3,8 +3,8 @@
 #include <vector>
 #include <iostream>
 
-#include "types.h"
-#include "constants.h"
+#include "types.hpp"
+#include "constants.hpp"
 
 template<bool isWhite>
 constexpr Bitboard getEnemyPieces(GameState state) {

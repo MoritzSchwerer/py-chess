@@ -1,5 +1,5 @@
 #pragma once
-#include "types.h"
+#include "types.hpp"
 
 constexpr Bitboard RANK_1 = 0xFF;
 constexpr Bitboard RANK_2 = 0xFF00;

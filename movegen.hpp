@@ -2,11 +2,10 @@
 #include <vector>
 #include <immintrin.h>
 
-#include "movegen.h"
-#include "types.h"
-#include "constants.h"
-#include "lookup.h"
-#include "moves.h"
+#include "types.hpp"
+#include "constants.hpp"
+#include "lookup.hpp"
+#include "moves.hpp"
 
 #define SquareOf(X) _tzcnt_u64(X)
 #define Bitloop(X) for(;X; X = _blsr_u64(X))

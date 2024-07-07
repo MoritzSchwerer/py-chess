@@ -1,173 +1,19 @@
-#include <iostream>
+#pragma once
 #include <vector>
-#include <array>
 #include <immintrin.h>
-#include <chrono>
 
+#include "movegen.h"
+#include "types.h"
 #include "constants.h"
 #include "lookup.h"
-#include "types.h"
+#include "moves.h"
 
 #define SquareOf(X) _tzcnt_u64(X)
 #define Bitloop(X) for(;X; X = _blsr_u64(X))
 
 
-/*
- * 0    0   0   0   quiet moves
- * 0	0	0	1	double pawn push
- * 0	0	1	0	king castle
- * 0	0	1	1	queen castle
- * 0	1	0	0	captures
- * 0	1	0	1	ep-capture
- * 1	0	0	0	knight-promotion
- * 1	0	0	1	bishop-promotion
- * 1	0	1	0	rook-promotion
- * 1	0	1	1	queen-promotion
- * 1	1	0	0	knight-promo capture
- * 1	1	0	1	bishop-promo capture
- * 1	1	1	0	rook-promo capture
- * 1	1	1	1	queen-promo capture
- */
-
-void to_binary(Bitboard board) {
-    for (int i = 63; i >= 0; i--) {
-        bool is_set = (board & (1ull << i));
-        std::cout << is_set;
-    }
-    std::cout << std::endl;
-}
-
-void print_move(Move move) {
-    int source = move & 0x3f;
-    int target = (move >> 6) & 0x3f;
-    int flags  = (move >> 12) & 0xf;
-    std::cout << "<Move src: " << source << ", tgt: " << target << ", flags: ";
-    for (int i = 3; i >= 0; i--) {
-        bool is_set = (move & (1ull << (12+i)));
-        std::cout << is_set;
-    }
-    std::cout << ">" << std::endl;
-}
-
-void print_board(Bitboard board) {
-    std::cout << "-------------------\n";
-    for (int rank = 7; rank >= 0; --rank){
-        for (int col = 0; col < 8; ++col) {
-            if (col == 0) std::cout << "| ";
-            bool is_set = board & (1ull << (rank*8+col));
-            if (is_set) {
-                std::cout << "x ";
-            } else {
-                std::cout << ". ";
-            }
-        }
-        std::cout << "|\n";
-    }
-    std::cout << "-------------------" << std::endl;
-}
-
 Move create_move(Bitboard from, Bitboard to, uint64_t flags) {
     return (from & 0x3f) | ((to & 0x3f) << 6) | ((flags & 0xf) << 12);
-}
-
-
-struct GameState {
-    Bitboard w_pawn   = 0x000000000000FF00;
-    Bitboard w_rook   = 0x0000000000000081;
-    Bitboard w_knight = 0x0000000000000042;
-    Bitboard w_bishop = 0x0000000000000024;
-    Bitboard w_queen  = 0x0000000000000008;
-    Bitboard w_king   = 0x0000000000000010;
-
-    Bitboard b_pawn   = 0x00FF000000000000;
-    Bitboard b_rook   = 0x8100000000000000;
-    Bitboard b_knight = 0x4200000000000000;
-    Bitboard b_bishop = 0x2400000000000000;
-    Bitboard b_queen  = 0x0800000000000000;
-    Bitboard b_king   = 0x1000000000000000;
-
-    Bitboard enpassant = 0ull;
-
-    bool w_king_castle = true;
-    bool w_queen_castle = true;
-    bool b_king_castle = true;
-    bool b_queen_castle = true;
-};
-
-template<bool isWhite>
-constexpr Bitboard getEnemyPieces(GameState state) {
-    if constexpr (isWhite) return state.b_pawn | state.b_rook | state.b_knight | state.b_bishop | state.b_queen | state.b_king;
-    else return state.w_pawn | state.w_rook | state.w_knight | state.w_bishop | state.w_queen | state.w_king;
-}
-template<bool isWhite>
-constexpr Bitboard getFriendlyPieces(GameState state) {
-    if constexpr (isWhite) return state.w_pawn | state.w_rook | state.w_knight | state.w_bishop | state.w_queen | state.w_king;
-    else return state.b_pawn | state.b_rook | state.b_knight | state.b_bishop | state.b_queen | state.b_king;
-}
-
-template<bool isWhite>
-constexpr Bitboard getPawns(GameState state) {
-    if constexpr (isWhite) return state.w_pawn;
-    else return state.b_pawn;
-}
-
-template<bool isWhite>
-constexpr Bitboard getKnights(GameState state) {
-    if constexpr (isWhite) return state.w_knight;
-    else return state.b_knight;
-}
-
-template<bool isWhite>
-constexpr Bitboard getBishops(GameState state) {
-    if constexpr (isWhite) return state.w_bishop;
-    else return state.b_bishop;
-}
-
-template<bool isWhite>
-constexpr Bitboard getRooks(GameState state) {
-    if constexpr (isWhite) return state.w_rook;
-    else return state.b_rook;
-}
-
-template<bool isWhite>
-constexpr Bitboard getQueens(GameState state) {
-    if constexpr (isWhite) return state.w_queen;
-    else return state.b_queen;
-}
-
-template<bool isWhite>
-constexpr Bitboard getKing(GameState state) {
-    if constexpr (isWhite) return state.w_king;
-    else return state.b_king;
-}
-
-template<bool isWhite>
-constexpr Bitboard SecondLastRank() {
-    if constexpr (isWhite) return RANK_7;
-    else return RANK_2;
-}
-
-template<bool isWhite>
-constexpr Bitboard PawnPush1(Bitboard pawns) {
-    if constexpr (isWhite) return pawns << 8;
-    else return pawns >> 8;
-}
-
-template<bool isWhite>
-constexpr Bitboard PawnPush2(Bitboard pawns) {
-    if constexpr (isWhite) return pawns << 16;
-    else return pawns >> 16;
-}
-
-template<bool isWhite>
-constexpr Bitboard PawnAttackLeft(Bitboard pawns) {
-    if constexpr (isWhite) return pawns << 7;
-    else return pawns >> 9;
-}
-template<bool isWhite>
-constexpr Bitboard PawnAttackRight(Bitboard pawns) {
-    if constexpr (isWhite) return pawns << 9;
-    else return pawns >> 7;
 }
 
 template<bool isWhite>
@@ -430,43 +276,3 @@ std::vector<Move> get_legal_moves(GameState state) {
     get_legal_king_moves<isWhite>(state, moves);
     return moves;
 }
-
-std::vector<Move> get_legal_king_moves(GameState state) {
-    std::vector<Move> moves;
-    moves.reserve(16);
-    // TODO: simple table lookup but need enemy attack map
-    return moves;
-}
-
-// TODO: Write tests to ensure the moves are actually legal
-
-
-
-int main() {
-    GameState state;
-
-    state.w_pawn = 0x000000000000F700;
-    // state.b_pawn = 0x0000000000000000;
-    // state.w_knight = 0x0000000000000000;
-    // state.w_bishop =  0x0000001800000000;
-    print_board(state.w_pawn);
-    // print_board(state.w_bishop);
-    // state.w_rook = 0x0000000000000080;
-    // print_board(state.w_rook);
-
-    std::vector<Move> moves = get_legal_moves<true>(state);
-    for (const Move& m : moves) {
-        print_move(m);
-    }
-    std::cout << "Number of possible moves detected: " << moves.size() << std::endl;
-
-
-    // for (int i = 0; i < 64; i++) {
-    //     std::cout << i << std::endl;
-    //     print_board(knightAttacks[i]);
-    // }
-
-
-    return 0;
-}
-

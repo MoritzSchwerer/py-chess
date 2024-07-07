@@ -1,9 +1,0 @@
-#!/bin/bash
- 
- 
-trap "echo Exited!; exit;" SIGINT SIGTERM
-while [[ 1=1 ]]
-do
-  watch --chgexit -n 1 "ls -l --full-time board.cpp | sha256sum" && clang++ board.cpp
-  sleep 1
-done

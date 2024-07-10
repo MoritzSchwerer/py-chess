@@ -203,20 +203,18 @@ Bitboard getSeenSquares(GameState state) {
     const Bitboard enemies = getEnemyPieces<isWhite>(state);
     const Bitboard friendlies = getFriendlyPieces<isWhite>(state);
     const Bitboard enemyKing = getKing<!isWhite>(state);
-    const Bitboard blockingPieces = friendlies | enemies & ~enemyKing;
+    const Bitboard blockingPieces = friendlies | enemies;// & ~enemyKing;
 
     const Bitboard pawns = getPawns<isWhite>(state);
     Bitboard knights = getKnights<isWhite>(state);
     Bitboard rooks = getRooks<isWhite>(state) | getQueens<isWhite>(state);
     Bitboard bishops = getBishops<isWhite>(state) | getQueens<isWhite>(state);
-    Bitboard king = getKing<isWhite>(state);
 
     Bitboard seenSquares = 0ull;
 
     // pawns
-    const Bitboard attackLeft  = (pawns & ~FILE_A) << 7;
-    const Bitboard attackRight = (pawns & ~FILE_H) << 9;
-    seenSquares |= attackLeft | attackRight;
+    seenSquares |= PawnAttackLeft<isWhite>(pawns & ~FILE_A);
+    seenSquares |= PawnAttackRight<isWhite>(pawns & ~FILE_H);
 
     // knights
     Bitloop(knights) {
@@ -275,3 +273,139 @@ std::vector<Move> get_legal_moves(GameState state) {
     get_legal_king_moves<isWhite>(state, moves);
     return moves;
 }
+
+// TODO: test if this does what is should do
+
+// this should set all bits to the same value
+// as the first bit
+inline Bitboard broadcast_bit(uint64_t number) {
+    return -(number & 1ull) | (number & 1ull);
+}
+
+template<bool isWhite>
+Bitboard get_check_mask(GameState state) {
+    const Bitboard enemies = getEnemyPieces<isWhite>(state);
+    const Bitboard friendlies = getFriendlyPieces<isWhite>(state);
+    const Bitboard king = getKing<isWhite>(state);
+    const uint64_t kingSquare = SquareOf(king);
+
+
+    Bitboard checkMask = 0ull;
+
+    // pawn attacks
+    Bitboard pawns = getEnemyPawns<isWhite>(state);
+    Bitloop (pawns) {
+        const uint64_t sourceSquare = SquareOf(pawns);
+        const Bitboard sourceBoard = 1ull << sourceSquare;
+        const Bitboard attacks = PawnAttackLeft<!isWhite>(sourceBoard & ~FILE_A) | PawnAttackRight<!isWhite>(sourceBoard & ~FILE_H);
+
+        // this will be 1 at the index where the king 
+        // if the king is attacked otherwise 0
+        const Bitboard kingAttacked = king & attacks;
+        // shift bit to least significant possition
+        const uint64_t isAttacked = kingAttacked >> kingSquare;
+        // no if the king is attacked all bits will be 1 
+        // and if not all bits will be 0
+        const Bitboard broadcasted = broadcast_bit(isAttacked);
+
+        checkMask |= sourceBoard & broadcasted;
+    }
+    // knight attacks
+    Bitboard knights = getEnemyKnights<isWhite>(state);
+    Bitloop (knights) {
+        const uint64_t sourceSquare = SquareOf(knights);
+        const Bitboard sourceBoard = 1ull << sourceSquare;
+        const Bitboard attacks = Lookup::knightAttacks[sourceSquare];
+
+        // this will be 1 at the index where the king 
+        // if the king is attacked otherwise 0
+        const Bitboard kingAttacked = king & attacks;
+        // shift bit to least significant possition
+        const uint64_t isAttacked = kingAttacked >> kingSquare;
+        // no if the king is attacked all bits will be 1 
+        // and if not all bits will be 0
+        const Bitboard broadcasted = broadcast_bit(isAttacked);
+
+        checkMask |= sourceBoard & broadcasted;
+    }
+
+    // rook attacks (+queen rook attacks)
+    Bitboard rooks = getEnemyRooks<isWhite>(state) | getEnemyQueens<isWhite>(state);
+    Bitloop (rooks) {
+        const uint64_t sourceSquare = SquareOf(rooks);
+        const Bitboard sourceBoard = 1ull << sourceSquare;
+
+        const Bitboard relevantIndices = Lookup::rookAttacks[sourceSquare];
+        const uint64_t blockIdx = _pext_u64(enemies | friendlies, relevantIndices);
+        const Bitboard attacks = Lookup::perSquareRookAttacks[sourceSquare][blockIdx];
+
+        // this will be 1 at the index where the king 
+        // if the king is attacked otherwise 0
+        const Bitboard kingAttacked = king & attacks;
+        // shift bit to least significant possition
+        const uint64_t isAttacked = kingAttacked >> kingSquare;
+        // no if the king is attacked all bits will be 1 
+        // and if not all bits will be 0
+        const Bitboard broadcasted = broadcast_bit(isAttacked);
+
+        // this is more complated
+        // 1. remove the attacks that don't point at the king
+        Bitboard tempCheckMap = attacks & Lookup::rookAttacks[kingSquare];
+        // 2. include the rook source square
+        tempCheckMap |= sourceBoard;
+        // 3. reset if king is not attacked
+        tempCheckMap &= broadcasted;
+
+        checkMask |= tempCheckMap;
+    }
+
+    // bishop attacks (+queen bishop attacks)
+    Bitboard bishops = getEnemyBishops<isWhite>(state) | getEnemyQueens<isWhite>(state);
+    Bitloop (bishops) {
+        const uint64_t sourceSquare = SquareOf(bishops);
+        const Bitboard sourceBoard = 1ull << sourceSquare;
+
+        const Bitboard relevantIndices = Lookup::bishopAttacks[sourceSquare];
+        const uint64_t blockIdx = _pext_u64(enemies | friendlies, relevantIndices);
+        const Bitboard attacks = Lookup::perSquareBishopAttacks[sourceSquare][blockIdx];
+
+        // this will be 1 at the index where the king 
+        // if the king is attacked otherwise 0
+        const Bitboard kingAttacked = king & attacks;
+        // shift bit to least significant possition
+        const uint64_t isAttacked = kingAttacked >> kingSquare;
+        // no if the king is attacked all bits will be 1 
+        // and if not all bits will be 0
+        const Bitboard broadcasted = broadcast_bit(isAttacked);
+
+        // this is more complated
+        // 1. remove the attacks that don't point at the king
+        Bitboard tempCheckMap = attacks & Lookup::bishopAttacks[kingSquare];
+        // 2. include the bishop source square
+        tempCheckMap |= sourceBoard;
+        // 3. reset if king is not attacked
+        tempCheckMap &= broadcasted;
+
+        checkMask |= tempCheckMap;
+    }
+    return checkMask;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

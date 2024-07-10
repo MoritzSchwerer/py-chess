@@ -1,5 +1,6 @@
 #include <vector>
 #include <iostream>
+#include <bitset>
 
 #include "types.hpp"
 #include "movegen.hpp"
@@ -24,7 +25,7 @@ void print_move(Move move) {
     std::cout << ">" << std::endl;
 }
 
-void print_board(Bitboard board) {
+void print_piece(Bitboard board) {
     std::cout << "-------------------\n";
     for (int rank = 7; rank >= 0; --rank){
         for (int col = 0; col < 8; ++col) {
@@ -41,12 +42,60 @@ void print_board(Bitboard board) {
     std::cout << "-------------------" << std::endl;
 }
 
+// thanks to https://labs.perplexity.ai/ for this nice printing
+void printBoard(const GameState& state, const Bitboard& highlight) {
+    std::cout << "\033[90m";
+    for (int i = 0; i < 19; ++i) {
+        std::cout << '-';
+    }
+    std::cout << "\n";
+
+    for (int i = 7; i >= 0; --i) {
+        std::cout << "\033[90m|\033[0m ";
+        for (int j = 0; j < 8; ++j) {
+            Bitboard mask = 1ULL << (i * 8 + j);
+            if (highlight & mask) {
+                std::cout << "\033[31m"; // Red
+            }
+            if (state.w_pawn & mask) std::cout << "P";
+            else if (state.w_rook & mask) std::cout << "R";
+            else if (state.w_knight & mask) std::cout << "N";
+            else if (state.w_bishop & mask) std::cout << "B";
+            else if (state.w_queen & mask) std::cout << "Q";
+            else if (state.w_king & mask) std::cout << "K";
+            else if (state.b_pawn & mask) std::cout << "p";
+            else if (state.b_rook & mask) std::cout << "r";
+            else if (state.b_knight & mask) std::cout << "n";
+            else if (state.b_bishop & mask) std::cout << "b";
+            else if (state.b_queen & mask) std::cout << "q";
+            else if (state.b_king & mask) std::cout << "k";
+            else std::cout << "-";
+            if (highlight & mask) {
+                std::cout << "\033[0m"; // Reset color
+            } else {
+                std::cout << "\033[37m\033[0m"; // White
+            }
+            std::cout << ' ';
+        }
+        std::cout << "\033[90m|\033[0m\n";
+    }
+
+    std::cout << "\033[90m";
+    for (int i = 0; i < 19; ++i) {
+        std::cout << '-';
+    }
+    std::cout << "\n\033[0m";
+}
+
 int main() {
     GameState state;
-    std::vector<Move> moves = get_legal_moves<true>(state);
-    for (const Move& m : moves) {
-        print_move(m);
-    }
-    std::cout << "Number of possible moves detected: " << moves.size() << std::endl;
+    // std::vector<Move> moves = get_legal_moves<true>(state);
+    // for (const Move& m : moves) {
+    //     print_move(m);
+    // }
+    // std::cout << "Number of possible moves detected: " << moves.size() << std::endl;
+    state.w_pawn = 0b00010000000000001110111100000000;
+    Bitboard seenSquares =  getSeenSquares<true>(state);
+    printBoard(state, seenSquares);
     return 0;
 }

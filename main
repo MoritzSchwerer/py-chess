@@ -1,0 +1,2 @@
+#! /usr/bin/bash
+clang++ main.cpp -std=c++2b -mbmi -mbmi2 -o /tmp/main.out && /tmp/main.out

@@ -24,9 +24,21 @@ constexpr Bitboard getPawns(GameState state) {
 }
 
 template<bool isWhite>
+constexpr Bitboard getEnemyPawns(GameState state) {
+    if constexpr (isWhite) return state.b_pawn;
+    else return state.w_pawn;
+}
+
+template<bool isWhite>
 constexpr Bitboard getKnights(GameState state) {
     if constexpr (isWhite) return state.w_knight;
     else return state.b_knight;
+}
+
+template<bool isWhite>
+constexpr Bitboard getEnemyKnights(GameState state) {
+    if constexpr (isWhite) return state.b_knight;
+    else return state.w_knight;
 }
 
 template<bool isWhite>
@@ -36,9 +48,21 @@ constexpr Bitboard getBishops(GameState state) {
 }
 
 template<bool isWhite>
+constexpr Bitboard getEnemyBishops(GameState state) {
+    if constexpr (isWhite) return state.b_bishop;
+    else return state.w_bishop;
+}
+
+template<bool isWhite>
 constexpr Bitboard getRooks(GameState state) {
     if constexpr (isWhite) return state.w_rook;
     else return state.b_rook;
+}
+
+template<bool isWhite>
+constexpr Bitboard getEnemyRooks(GameState state) {
+    if constexpr (isWhite) return state.b_rook;
+    else return state.w_rook;
 }
 
 template<bool isWhite>
@@ -48,9 +72,21 @@ constexpr Bitboard getQueens(GameState state) {
 }
 
 template<bool isWhite>
+constexpr Bitboard getEnemyQueens(GameState state) {
+    if constexpr (isWhite) return state.b_queen;
+    else return state.w_queen;
+}
+
+template<bool isWhite>
 constexpr Bitboard getKing(GameState state) {
     if constexpr (isWhite) return state.w_king;
     else return state.b_king;
+}
+
+template<bool isWhite>
+constexpr Bitboard getEnemyKing(GameState state) {
+    if constexpr (isWhite) return state.b_king;
+    else return state.w_king;
 }
 
 template<bool isWhite>

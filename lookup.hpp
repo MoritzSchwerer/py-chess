@@ -6,32 +6,6 @@
 #include "types.hpp"
 #include "constants.hpp"
 
-void to_binary_(Bitboard board) {
-    for (int i = 63; i >= 0; i--) {
-        bool is_set = (board & (1ull << i));
-        std::cout << is_set;
-    }
-    std::cout << std::endl;
-}
-
-
-void print_board_(Bitboard board) {
-    std::cout << "-------------------\n";
-    for (int rank = 7; rank >= 0; --rank){
-        for (int col = 0; col < 8; ++col) {
-            if (col == 0) std::cout << "| ";
-            bool is_set = board & (1ull << (rank*8+col));
-            if (is_set) {
-                std::cout << "x ";
-            } else {
-                std::cout << ". ";
-            }
-        }
-        std::cout << "|\n";
-    }
-    std::cout << "-------------------" << std::endl;
-}
-
 constexpr uint64_t rookAttackMaskSize = 4096;
 constexpr uint64_t bishopAttackMaskSize = 512;
 
@@ -106,24 +80,28 @@ std::array<std::array<Bitboard, bishopAttackMaskSize>, 64> generatePerSquareBish
             Bitboard attacks = 0ull;
             // north-east
             for (uint64_t ts = ss+9; ts < 64; ts+=9) {
+                if (1ull << ss & FILE_H) break;
                 const Bitboard targetBoard = 1ull << ts;
                 attacks |= targetBoard;
                 if (targetBoard & blockers | targetBoard & border) break;
             }
             // south-east
             for (int64_t ts = ss-7; ts >= 0 && ts < 64; ts-=7) {
+                if (1ull << ss & FILE_H) break;
                 const Bitboard targetBoard = 1ull << ts;
                 attacks |= targetBoard;
                 if (targetBoard & blockers | targetBoard & border) break;
             }
             // south-west
             for (uint64_t ts = ss-9; ts >= 0 && ts < 64; ts-=9) {
+                if (1ull << ss & FILE_A) break;
                 const Bitboard targetBoard = 1ull << ts;
                 attacks |= targetBoard;
                 if (targetBoard & blockers | targetBoard & border) break;
             }
             // north-west
             for (uint64_t ts = ss+7; ts < 64; ts+=7) {
+                if (1ull << ss & FILE_A) break;
                 const Bitboard targetBoard = 1ull << ts;
                 attacks |= targetBoard;
                 if (targetBoard & blockers | targetBoard & border) break;
@@ -135,6 +113,60 @@ std::array<std::array<Bitboard, bishopAttackMaskSize>, 64> generatePerSquareBish
 }
 
 std::array<std::array<Bitboard, bishopAttackMaskSize>, 64> perSquareBishopAttacks = generatePerSquareBishopAttacks();
+
+
+std::array<std::array<Bitboard, bishopAttackMaskSize>, 64> generatePerSquareXrayBishopAttacks() {
+    std::array<std::array<Bitboard, bishopAttackMaskSize>, 64> perSquareAttacks;
+    const Bitboard border = RANK_1 | RANK_8 | FILE_A | FILE_H;
+    for (uint64_t ss = 0; ss < 64; ss++) {
+        const Bitboard attackMask = bishopAttacks[ss];
+        for (uint64_t i = 0; i < bishopAttackMaskSize; i++) {
+            const Bitboard blockers = _pdep_u64(i, attackMask);
+
+            Bitboard attacks = 0ull;
+            // north-east
+            int hitCount = 0;
+            for (uint64_t ts = ss+9; ts < 64; ts+=9) {
+                if (1ull << ss & FILE_H) break;
+                const Bitboard targetBoard = 1ull << ts;
+                attacks |= targetBoard;
+                if (targetBoard & blockers) hitCount ++;
+                if (hitCount >= 2 || targetBoard & border) break;
+            }
+            // south-east
+            hitCount = 0;
+            for (int64_t ts = ss-7; ts >= 0 && ts < 64; ts-=7) {
+                if (1ull << ss & FILE_H) break;
+                const Bitboard targetBoard = 1ull << ts;
+                attacks |= targetBoard;
+                if (targetBoard & blockers) hitCount ++;
+                if (hitCount >= 2 || targetBoard & border) break;
+            }
+            // south-west
+            hitCount = 0;
+            for (uint64_t ts = ss-9; ts >= 0 && ts < 64; ts-=9) {
+                if (1ull << ss & FILE_A) break;
+                const Bitboard targetBoard = 1ull << ts;
+                attacks |= targetBoard;
+                if (targetBoard & blockers) hitCount ++;
+                if (hitCount >= 2 || targetBoard & border) break;
+            }
+            // north-west
+            hitCount = 0;
+            for (uint64_t ts = ss+7; ts < 64; ts+=7) {
+                if (1ull << ss & FILE_A) break;
+                const Bitboard targetBoard = 1ull << ts;
+                attacks |= targetBoard;
+                if (targetBoard & blockers) hitCount ++;
+                if (hitCount >= 2 || targetBoard & border) break;
+            }
+            perSquareAttacks[ss][i] = attacks;
+        }
+    }
+    return perSquareAttacks;
+}
+
+std::array<std::array<Bitboard, bishopAttackMaskSize>, 64> perSquareXrayBishopAttacks = generatePerSquareXrayBishopAttacks();
 
 
 std::array<Bitboard, 64> generateRookAttacks() {
@@ -209,5 +241,56 @@ std::array<std::array<Bitboard, rookAttackMaskSize>, 64> generatePerSquareRookAt
 }
 
 std::array<std::array<Bitboard, rookAttackMaskSize>, 64> perSquareRookAttacks = generatePerSquareRookAttacks();
+
+
+std::array<std::array<Bitboard, rookAttackMaskSize>, 64> generatePerSquareXrayRookAttacks() {
+    std::array<std::array<Bitboard, rookAttackMaskSize>, 64> perSquareAttacks;
+    const Bitboard hBorder = RANK_1 | RANK_8;
+    const Bitboard vBorder = FILE_A | FILE_H;
+    for (uint64_t ss = 0; ss < 64; ss++) {
+        const Bitboard attackMask = rookAttacks[ss];
+        for (uint64_t i = 0; i < rookAttackMaskSize; i++) {
+            const Bitboard blockers = _pdep_u64(i, attackMask);
+
+            Bitboard attacks = 0ull;
+            // north
+            int hitCount = 0;
+            for (int ts = ss+8; ts < 64; ts+=8) {
+                const Bitboard targetBoard = 1ull << ts;
+                attacks |= targetBoard;
+                if (targetBoard & blockers) hitCount++;
+                if (hitCount >= 2 || targetBoard & hBorder) break;
+            }
+            // east
+            hitCount = 0;
+            for (int ts = ss+1; ts < 64 && ts % 8 > 0; ts++) {
+                const Bitboard targetBoard = 1ull << ts;
+                attacks |= targetBoard;
+                if (targetBoard & blockers) hitCount++;
+                if (hitCount >= 2 || targetBoard & vBorder) break;
+            }
+            // south
+            hitCount = 0;
+            for (int ts = ss-8; ts >= 0; ts-=8) {
+                const Bitboard targetBoard = 1ull << ts;
+                attacks |= targetBoard;
+                if (targetBoard & blockers) hitCount++;
+                if (hitCount >= 2| targetBoard & hBorder) break;
+            }
+            // west
+            hitCount = 0;
+            for (int ts = ss-1; ts >= 0 && ts % 8 < 7; ts--) {
+                const Bitboard targetBoard = 1ull << ts;
+                attacks |= targetBoard;
+                if (targetBoard & blockers) hitCount++;
+                if (hitCount >= 2 || targetBoard & vBorder) break;
+            }
+            perSquareAttacks[ss][i] = attacks;
+        }
+    }
+    return perSquareAttacks;
+}
+
+std::array<std::array<Bitboard, rookAttackMaskSize>, 64> perSquareXrayRookAttacks = generatePerSquareXrayRookAttacks();
 
 }

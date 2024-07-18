@@ -1,7 +1,21 @@
 #pragma once
 #include "types.hpp"
 
-void to_binary(Bitboard board) {
+int fenPosToIndex(const std::string& notation) {
+  char letter = notation[0];
+  int number = notation[1] - '0'; // convert char to int
+  int index = (number - 1) * 8 + (letter - 'a');
+  return index;
+}
+
+std::string squareToFenPos(int square) {
+    static const char files[] = "abcdefgh";
+    int file = square % 8;
+    int rank = square / 8;
+    return std::string(1, files[file]) + std::to_string(rank + 1);
+}
+
+void printBinary(Bitboard board) {
     for (int i = 63; i >= 0; i--) {
         bool is_set = (board & (1ull << i));
         std::cout << is_set;
@@ -9,7 +23,7 @@ void to_binary(Bitboard board) {
     std::cout << std::endl;
 }
 
-void print_move(Move move) {
+void printMove(Move move) {
     int source = move & 0x3f;
     int target = (move >> 6) & 0x3f;
     int flags  = (move >> 12) & 0xf;
@@ -21,7 +35,7 @@ void print_move(Move move) {
     std::cout << ">" << std::endl;
 }
 
-void print_piece(Bitboard board) {
+void printPiece(Bitboard board) {
     std::cout << "-------------------\n";
     for (int rank = 7; rank >= 0; --rank){
         for (int col = 0; col < 8; ++col) {

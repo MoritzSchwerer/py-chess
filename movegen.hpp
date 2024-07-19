@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <exception>
 
 #include "types.hpp"
 #include "constants.hpp"
@@ -221,14 +222,11 @@ Bitboard getPinMaskDG(GameState state) {
 }
 
 template<bool isWhite>
-void getLegalPawnMoves(const GameState &state, std::vector<Move> &moves) {
+void getLegalPawnMoves(const GameState &state, Bitboard checkMask, Bitboard pinMaskHV, Bitboard pinMaskDG, Moves &moves) {
     const Bitboard enemies = getEnemyPieces<isWhite>(state);
     const Bitboard friendlies = getFriendlyPieces<isWhite>(state);
     const Bitboard pawns = getPawns<isWhite>(state);
     const Bitboard enemyOrFriendly = enemies | friendlies;
-    const Bitboard pinMaskHV = getPinMaskHV<isWhite>(state);
-    const Bitboard pinMaskDG = getPinMaskDG<isWhite>(state);
-    const Bitboard checkMask = getCheckMask<isWhite>(state);
 
     Bitboard pawnsNoPromo = pawns & ~secondLastRank<isWhite>();
     Bitloop(pawnsNoPromo) {
@@ -301,12 +299,9 @@ void getLegalPawnMoves(const GameState &state, std::vector<Move> &moves) {
 
 
 template<bool isWhite>
-void getLegalKnightMoves(const GameState &state, std::vector<Move> &moves) {
+void getLegalKnightMoves(const GameState &state, Bitboard checkMask, Bitboard pinMaskHV, Bitboard pinMaskDG, Moves &moves) {
     const Bitboard friendlies = getFriendlyPieces<isWhite>(state);
     const Bitboard enemies = getEnemyPieces<isWhite>(state);
-    const Bitboard pinMaskHV = getPinMaskHV<isWhite>(state);
-    const Bitboard pinMaskDG = getPinMaskDG<isWhite>(state);
-    const Bitboard checkMask = getCheckMask<isWhite>(state);
 
     // search for knights on the board
     Bitboard knights = getKnights<isWhite>(state) & ~(pinMaskHV | pinMaskDG);
@@ -329,13 +324,9 @@ void getLegalKnightMoves(const GameState &state, std::vector<Move> &moves) {
 }
 
 template<bool isWhite>
-void getLegalBishopMoves(const GameState &state, std::vector<Move> &moves) {
+void getLegalBishopMoves(const GameState &state, Bitboard checkMask, Bitboard pinMaskHV, Bitboard pinMaskDG, Moves &moves) {
     const Bitboard enemies = getEnemyPieces<isWhite>(state);
     const Bitboard friendlies = getFriendlyPieces<isWhite>(state);
-
-    const Bitboard pinMaskHV = getPinMaskHV<isWhite>(state);
-    const Bitboard pinMaskDG = getPinMaskDG<isWhite>(state);
-    const Bitboard checkMask = getCheckMask<isWhite>(state);
 
     // hv bishops can not move
     Bitboard bishops = getBishops<isWhite>(state) & ~pinMaskHV;
@@ -363,13 +354,9 @@ void getLegalBishopMoves(const GameState &state, std::vector<Move> &moves) {
 }
 
 template<bool isWhite>
-void getLegalRookMoves(const GameState &state, std::vector<Move> &moves) {
+void getLegalRookMoves(const GameState &state, Bitboard checkMask, Bitboard pinMaskHV, Bitboard pinMaskDG, Moves &moves) {
     const Bitboard enemies = getEnemyPieces<isWhite>(state);
     const Bitboard friendlies = getFriendlyPieces<isWhite>(state);
-
-    const Bitboard pinMaskHV = getPinMaskHV<isWhite>(state);
-    const Bitboard pinMaskDG = getPinMaskDG<isWhite>(state);
-    const Bitboard checkMask = getCheckMask<isWhite>(state);
 
     // a diagonally pinned rook can never move
     Bitboard rooks = getRooks<isWhite>(state) & ~pinMaskDG;
@@ -397,13 +384,9 @@ void getLegalRookMoves(const GameState &state, std::vector<Move> &moves) {
 }
 
 template<bool isWhite>
-void getLegalQueenMoves(const GameState &state, std::vector<Move> &moves) {
+void getLegalQueenMoves(const GameState &state, Bitboard checkMask, Bitboard pinMaskHV, Bitboard pinMaskDG, Moves &moves) {
     const Bitboard enemies = getEnemyPieces<isWhite>(state);
     const Bitboard friendlies = getFriendlyPieces<isWhite>(state);
-
-    const Bitboard pinMaskHV = getPinMaskHV<isWhite>(state);
-    const Bitboard pinMaskDG = getPinMaskDG<isWhite>(state);
-    const Bitboard checkMask = getCheckMask<isWhite>(state);
 
     // rook attacks
     Bitboard queens = getQueens<isWhite>(state) & ~pinMaskDG;
@@ -515,12 +498,12 @@ Bitboard getSeenSquares(const GameState &state) {
 } 
 
 template<bool isWhite>
-void getLegalKingMoves(const GameState &state, std::vector<Move> &moves) {
+void getLegalKingMoves(const GameState &state, Bitboard enemySeenSquares, Moves &moves) {
     const uint64_t kingSquare = SquareOf(getKing<isWhite>(state));
     const Bitboard enemies = getEnemyPieces<isWhite>(state);
     const Bitboard friendlies = getFriendlyPieces<isWhite>(state);
     const Bitboard attackedSquares = getKingAttacks<isWhite>(state);
-    const Bitboard enemySeenSquares = getSeenSquares<!isWhite>(state);
+
     Bitboard validTargets = attackedSquares & ~enemySeenSquares & ~friendlies;
     Bitloop (validTargets) {
         const uint64_t targetSquare = SquareOf(validTargets);
@@ -529,43 +512,176 @@ void getLegalKingMoves(const GameState &state, std::vector<Move> &moves) {
         moves.push_back(create_move(kingSquare, targetSquare, flags));
     }
 }
-template<bool isWhite, bool kingSide>
-void getLegalCastleMoves(const GameState &state, Moves &moves) {
-    if constexpr (isWhite && kingSide) {
-        moves.push_back(create_move(4ull, 7ull, 0b0010));
-    } else if constexpr (isWhite && !kingSide) {
-        moves.push_back(create_move(4ull, 0ull, 0b0011));
-    } else if constexpr (!isWhite && kingSide) {
-        moves.push_back(create_move(60ull, 63ull, 0b0010));
-    } else {
-        moves.push_back(create_move(60ull, 56ull, 0b0011));
+template<GameStatus status>
+void getLegalCastleMoves(const GameState &state, Bitboard seenSquares, Moves &moves) {
+    const Bitboard enemies = getEnemyPieces<status.isWhite>(state);
+    const Bitboard friendlies = getFriendlyPieces<status.isWhite>(state);
+    if constexpr (status.isWhite && status.wKingC) {
+        const Bitboard relevantSquares = 0b01110000;
+        if (!(relevantSquares & seenSquares | relevantSquares & friendlies | relevantSquares & enemies)) {
+            moves.push_back(create_move(4ull, 7ull, 0b0010));
+        }
+    } 
+    if constexpr (status.isWhite && status.wQueenC) {
+        const Bitboard relevantSquares = 0b00001110;
+        if (!(relevantSquares & seenSquares | relevantSquares & friendlies | relevantSquares & enemies)) {
+            moves.push_back(create_move(4ull, 0ull, 0b0011));
+        }
+    } 
+    if constexpr (!status.isWhite && status.bKingC) {
+        const Bitboard relevantSquares = 0x01110000ull << 56;
+        if (!(relevantSquares & seenSquares | relevantSquares & friendlies | relevantSquares & enemies)) {
+            moves.push_back(create_move(60ull, 63ull, 0b0010));
+        }
+    }
+    if constexpr (!status.isWhite && status.bQueenC) {
+        const Bitboard relevantSquares = 0x00001110ull << 56;
+        if (!(relevantSquares & seenSquares | relevantSquares & friendlies | relevantSquares & enemies)) {
+            moves.push_back(create_move(60ull, 56ull, 0b0011));
+        }
     }
 }
 
+
 template<bool isWhite>
-std::vector<Move> getLegalMoves(const GameState &state) {
-    std::vector<Move> moves;
-    getLegalPawnMoves<isWhite>(state, moves);
-    getLegalKnightMoves<isWhite>(state, moves);
-    getLegalRookMoves<isWhite>(state, moves);
-    getLegalBishopMoves<isWhite>(state, moves);
-    getLegalQueenMoves<isWhite>(state, moves);
-    getLegalKingMoves<isWhite>(state, moves);
-    // getLegalCastleMoves<isWhite, state.
+Bitboard getEnemyBishopSeenSquaresAfterEnpassant(const GameState &state, uint64_t attackingPawnSquare) {
+    const Bitboard enemies = getEnemyPieces<isWhite>(state);
+    const Bitboard friendlies = getFriendlyPieces<isWhite>(state);
+    const Bitboard enpassantSquare = state.enpassant_board;
+    const Bitboard pawnSquare = pawnPush1<!isWhite>(enpassantSquare);
+
+    const Bitboard blockingPieces = (enemies | friendlies | enpassantSquare) & ~pawnSquare & ~(1ull << attackingPawnSquare);
+
+    Bitboard bishops = getBishops<!isWhite>(state) | getQueens<!isWhite>(state);
+    Bitboard seenSquares = 0ull;
+    Bitloop(bishops) {
+        const uint64_t sourceSquare = SquareOf(bishops);
+        const Bitboard relevantMask = Lookup::bishopAttacks[sourceSquare];
+        const uint64_t blockIdx = _pext_u64(blockingPieces, relevantMask);
+        const Bitboard targetsBoard = Lookup::perSquareBishopAttacks[sourceSquare][blockIdx];
+        seenSquares |= targetsBoard;
+    }
+    return seenSquares;
+}
+
+template<bool isWhite>
+void getLegalEnpassantCaptures(const GameState &state, Moves &moves) {
+    const Bitboard king = getKing<isWhite>(state);
+    const Bitboard enemyEnpassant = state.enpassant_board;
+    const Bitboard pawns = getPawns<isWhite>(state);
+    const Bitboard leftAttack = pawnAttackLeft<!isWhite>(enemyEnpassant);
+    const Bitboard rightAttack = pawnAttackRight<!isWhite>(enemyEnpassant);
+    const Bitboard attackingSquares = leftAttack | rightAttack;
+    Bitboard attackingPawns = attackingSquares & pawns;
+    Bitloop (attackingPawns) {
+        const uint64_t sourceSquare = SquareOf(attackingPawns);
+        const Bitboard seenSquares = getEnemyBishopSeenSquaresAfterEnpassant<isWhite>(state, sourceSquare);
+        if (!(seenSquares & king)) {
+            moves.push_back(create_move(sourceSquare, SquareOf(enemyEnpassant), 0b0101));
+        }
+    }
+}
+
+template<GameStatus status>
+Moves getLegalMovesTemplate(const GameState &state) {
+    const Bitboard checkMask = getCheckMask<status.isWhite>(state);
+    const Bitboard pinMaskHV = getPinMaskHV<status.isWhite>(state);
+    const Bitboard pinMaskDG = getPinMaskDG<status.isWhite>(state);
+    const Bitboard enemySeenSquares = getSeenSquares<!status.isWhite>(state);
+
+    Moves moves;
+    getLegalPawnMoves<status.isWhite>(state, checkMask, pinMaskHV, pinMaskDG, moves);
+    getLegalKnightMoves<status.isWhite>(state, checkMask, pinMaskHV, pinMaskDG, moves);
+    getLegalRookMoves<status.isWhite>(state, checkMask, pinMaskHV, pinMaskDG, moves);
+    getLegalBishopMoves<status.isWhite>(state, checkMask, pinMaskHV, pinMaskDG, moves);
+    getLegalQueenMoves<status.isWhite>(state, checkMask, pinMaskHV, pinMaskDG, moves);
+    getLegalKingMoves<status.isWhite>(state, enemySeenSquares, moves);
+    if constexpr (status.wKingC || status.wQueenC || status.bKingC || status.bQueenC) {
+        getLegalCastleMoves<status>(state, enemySeenSquares, moves);
+    }
+    if constexpr (status.enpassant) {
+        getLegalEnpassantCaptures<status.isWhite>(state, moves);
+    }
     return moves;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+// TODO: this should be the entry point.
+// after we parse the board and want to generate all legal acttions
+// via this function
+//
+// we then still need to make the move and change up the boards
+// this will be done via the state machine pattern through the
+// GameStatus struct
+//
+// Also we still need to implement the drawing mechanisms like 50 moves
+// and 3 fold repetition. CheckMate and StaleMate should be easy
+Moves getLegalMoves(const GameState &state) {
+    switch (getStatusPattern(state.status)) {
+        case 0b000000: return getLegalMovesTemplate<GameStatus(0b000000ull)>(state);
+        case 0b000001: return getLegalMovesTemplate<GameStatus(0b000001ull)>(state);
+        case 0b000010: return getLegalMovesTemplate<GameStatus(0b000010ull)>(state);
+        case 0b000011: return getLegalMovesTemplate<GameStatus(0b000011ull)>(state);
+        case 0b000100: return getLegalMovesTemplate<GameStatus(0b000100ull)>(state);
+        case 0b000101: return getLegalMovesTemplate<GameStatus(0b000101ull)>(state);
+        case 0b000110: return getLegalMovesTemplate<GameStatus(0b000110ull)>(state);
+        case 0b000111: return getLegalMovesTemplate<GameStatus(0b000111ull)>(state);
+        case 0b001000: return getLegalMovesTemplate<GameStatus(0b001000ull)>(state);
+        case 0b001001: return getLegalMovesTemplate<GameStatus(0b001001ull)>(state);
+        case 0b001010: return getLegalMovesTemplate<GameStatus(0b001010ull)>(state);
+        case 0b001011: return getLegalMovesTemplate<GameStatus(0b001011ull)>(state);
+        case 0b001100: return getLegalMovesTemplate<GameStatus(0b001100ull)>(state);
+        case 0b001101: return getLegalMovesTemplate<GameStatus(0b001101ull)>(state);
+        case 0b001110: return getLegalMovesTemplate<GameStatus(0b001110ull)>(state);
+        case 0b001111: return getLegalMovesTemplate<GameStatus(0b001111ull)>(state);
+        case 0b010000: return getLegalMovesTemplate<GameStatus(0b010000ull)>(state);
+        case 0b010001: return getLegalMovesTemplate<GameStatus(0b010001ull)>(state);
+        case 0b010010: return getLegalMovesTemplate<GameStatus(0b010010ull)>(state);
+        case 0b010011: return getLegalMovesTemplate<GameStatus(0b010011ull)>(state);
+        case 0b010100: return getLegalMovesTemplate<GameStatus(0b010100ull)>(state);
+        case 0b010101: return getLegalMovesTemplate<GameStatus(0b010101ull)>(state);
+        case 0b010110: return getLegalMovesTemplate<GameStatus(0b010110ull)>(state);
+        case 0b010111: return getLegalMovesTemplate<GameStatus(0b010111ull)>(state);
+        case 0b011000: return getLegalMovesTemplate<GameStatus(0b011000ull)>(state);
+        case 0b011001: return getLegalMovesTemplate<GameStatus(0b011001ull)>(state);
+        case 0b011010: return getLegalMovesTemplate<GameStatus(0b011010ull)>(state);
+        case 0b011011: return getLegalMovesTemplate<GameStatus(0b011011ull)>(state);
+        case 0b011100: return getLegalMovesTemplate<GameStatus(0b011100ull)>(state);
+        case 0b011101: return getLegalMovesTemplate<GameStatus(0b011101ull)>(state);
+        case 0b011110: return getLegalMovesTemplate<GameStatus(0b011110ull)>(state);
+        case 0b011111: return getLegalMovesTemplate<GameStatus(0b011111ull)>(state);
+        case 0b100000: return getLegalMovesTemplate<GameStatus(0b100000ull)>(state);
+        case 0b100001: return getLegalMovesTemplate<GameStatus(0b100001ull)>(state);
+        case 0b100010: return getLegalMovesTemplate<GameStatus(0b100010ull)>(state);
+        case 0b100011: return getLegalMovesTemplate<GameStatus(0b100011ull)>(state);
+        case 0b100100: return getLegalMovesTemplate<GameStatus(0b100100ull)>(state);
+        case 0b100101: return getLegalMovesTemplate<GameStatus(0b100101ull)>(state);
+        case 0b100110: return getLegalMovesTemplate<GameStatus(0b100110ull)>(state);
+        case 0b100111: return getLegalMovesTemplate<GameStatus(0b100111ull)>(state);
+        case 0b101000: return getLegalMovesTemplate<GameStatus(0b101000ull)>(state);
+        case 0b101001: return getLegalMovesTemplate<GameStatus(0b101001ull)>(state);
+        case 0b101010: return getLegalMovesTemplate<GameStatus(0b101010ull)>(state);
+        case 0b101011: return getLegalMovesTemplate<GameStatus(0b101011ull)>(state);
+        case 0b101100: return getLegalMovesTemplate<GameStatus(0b101100ull)>(state);
+        case 0b101101: return getLegalMovesTemplate<GameStatus(0b101101ull)>(state);
+        case 0b101110: return getLegalMovesTemplate<GameStatus(0b101110ull)>(state);
+        case 0b101111: return getLegalMovesTemplate<GameStatus(0b101111ull)>(state);
+        case 0b110000: return getLegalMovesTemplate<GameStatus(0b110000ull)>(state);
+        case 0b110001: return getLegalMovesTemplate<GameStatus(0b110001ull)>(state);
+        case 0b110010: return getLegalMovesTemplate<GameStatus(0b110010ull)>(state);
+        case 0b110011: return getLegalMovesTemplate<GameStatus(0b110011ull)>(state);
+        case 0b110100: return getLegalMovesTemplate<GameStatus(0b110100ull)>(state);
+        case 0b110101: return getLegalMovesTemplate<GameStatus(0b110101ull)>(state);
+        case 0b110110: return getLegalMovesTemplate<GameStatus(0b110110ull)>(state);
+        case 0b110111: return getLegalMovesTemplate<GameStatus(0b110111ull)>(state);
+        case 0b111000: return getLegalMovesTemplate<GameStatus(0b111000ull)>(state);
+        case 0b111001: return getLegalMovesTemplate<GameStatus(0b111001ull)>(state);
+        case 0b111010: return getLegalMovesTemplate<GameStatus(0b111010ull)>(state);
+        case 0b111011: return getLegalMovesTemplate<GameStatus(0b111011ull)>(state);
+        case 0b111100: return getLegalMovesTemplate<GameStatus(0b111100ull)>(state);
+        case 0b111101: return getLegalMovesTemplate<GameStatus(0b111101ull)>(state);
+        case 0b111110: return getLegalMovesTemplate<GameStatus(0b111110ull)>(state);
+        case 0b111111: return getLegalMovesTemplate<GameStatus(0b111111ull)>(state);
+        default:
+            throw std::runtime_error("Error: the pattern should be exaustive but failed");
+    }
+}

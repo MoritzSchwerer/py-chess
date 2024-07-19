@@ -7,13 +7,45 @@ typedef uint16_t Move;
 typedef std::vector<Move> Moves;
 
 struct GameStatus {
-    bool isWhite = true;
-    bool w_king_castle = true;
-    bool w_queen_castle = true;
-    bool b_king_castle = true;
-    bool b_queen_castle = true;
-    bool enpassant = true;
+    public:
+    bool isWhite;
+    bool wKingC;
+    bool wQueenC;
+    bool bKingC;
+    bool bQueenC;
+    bool enpassant;
+
+    constexpr GameStatus() {
+        isWhite = true;
+        wKingC = true;
+        wQueenC = true;
+        bKingC = true;
+        bQueenC = true;
+        enpassant = false;
+    }
+
+    constexpr GameStatus(bool isWhite, bool wKingC, bool wQueenC, bool bKingC, bool bQueenC, bool enpassant) {
+        isWhite = isWhite;
+        wKingC = wKingC;
+        wQueenC = wQueenC;
+        bKingC = bKingC;
+        bQueenC = bQueenC;
+        enpassant = enpassant;
+    }
+
+    constexpr GameStatus(uint8_t pattern) {
+        isWhite   = (pattern & 0b000001) != 0;
+        wKingC    = (pattern & 0b000010) != 0;
+        wQueenC   = (pattern & 0b000100) != 0;
+        bKingC    = (pattern & 0b001000) != 0;
+        bQueenC   = (pattern & 0b010000) != 0;
+        enpassant = (pattern & 0b100000) != 0;
+    }
 };
+
+inline uint8_t getStatusPattern(const GameStatus status) {
+    return status.isWhite | status.wKingC << 1 | status.wQueenC << 2 | status.bKingC << 3 | status.bQueenC << 4 | status.enpassant << 5;
+}
 
 struct GameState {
     Bitboard w_pawn   = 0x000000000000FF00;
@@ -55,10 +87,10 @@ GameState GameStateEmpty() {
 
     GameStatus status;
     status.isWhite = true;
-    status.w_king_castle = false;
-    status.w_queen_castle = false;
-    status.b_king_castle = false;
-    status.b_queen_castle = false;
+    status.wKingC = false;
+    status.wQueenC = false;
+    status.bKingC = false;
+    status.bQueenC = false;
     status.enpassant = false;
 
     gameState.status = status;
@@ -118,10 +150,10 @@ GameState parseFen(const std::string& fen) {
 
     // Parse castling availability
     std::string castling = tokens[2];
-    status.w_king_castle = castling.find('K') != std::string::npos;
-    status.w_queen_castle = castling.find('Q') != std::string::npos;
-    status.b_king_castle = castling.find('k') != std::string::npos;
-    status.b_queen_castle = castling.find('q') != std::string::npos;
+    status.wKingC = castling.find('K') != std::string::npos;
+    status.wQueenC = castling.find('Q') != std::string::npos;
+    status.bKingC = castling.find('k') != std::string::npos;
+    status.bQueenC = castling.find('q') != std::string::npos;
 
     // Parse en passant target square
     std::string enPassant = tokens[3];

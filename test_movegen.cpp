@@ -18,6 +18,7 @@ struct TestCase {
     GameState state;
     Moves moves;
 };
+
 typedef std::vector<TestCase> TestCases;
 
 TestCases readTestCaseFile(const std::string &f, TestCases &testCases) {

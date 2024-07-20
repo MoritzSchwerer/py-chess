@@ -150,3 +150,14 @@ constexpr Bitboard pawnAttackRight(Bitboard pawns) {
     else return pawns >> 7;
 }
 
+template<bool isWhite>
+constexpr Bitboard initialRookLeft() {
+    if constexpr (isWhite) return 1ull;
+    else return 1ull << 56;
+}
+
+template<bool isWhite>
+constexpr Bitboard initialRookRight() {
+    if constexpr (isWhite) return 7ull;
+    else return 7ull << 56;
+}

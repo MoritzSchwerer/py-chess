@@ -6,7 +6,17 @@ typedef uint64_t Bitboard;
 typedef uint16_t Move;
 typedef std::vector<Move> Moves;
 
-struct GameStatus {
+enum class PieceType : uint8_t {
+    Pawn,
+    Knight,
+    Bishop,
+    Rook,
+    Queen,
+    King,
+    None,
+};
+
+class GameStatus {
     public:
     bool isWhite;
     bool wKingC;
@@ -15,23 +25,10 @@ struct GameStatus {
     bool bQueenC;
     bool enpassant;
 
-    constexpr GameStatus() {
-        isWhite = true;
-        wKingC = true;
-        wQueenC = true;
-        bKingC = true;
-        bQueenC = true;
-        enpassant = false;
-    }
+    constexpr GameStatus() : isWhite(true), wKingC(true), wQueenC(true), bKingC(true), bQueenC(true), enpassant(false) {}
 
-    constexpr GameStatus(bool isWhite, bool wKingC, bool wQueenC, bool bKingC, bool bQueenC, bool enpassant) {
-        isWhite = isWhite;
-        wKingC = wKingC;
-        wQueenC = wQueenC;
-        bKingC = bKingC;
-        bQueenC = bQueenC;
-        enpassant = enpassant;
-    }
+    constexpr GameStatus(bool isWhite, bool wKingC, bool wQueenC, bool bKingC, bool bQueenC, bool enpassant)
+        : isWhite(isWhite), wKingC(wKingC), wQueenC(wQueenC), bKingC(bKingC), bQueenC(bQueenC), enpassant(enpassant) {}
 
     constexpr GameStatus(uint8_t pattern) {
         isWhite   = (pattern & 0b000001) != 0;
@@ -41,6 +38,69 @@ struct GameStatus {
         bQueenC   = (pattern & 0b010000) != 0;
         enpassant = (pattern & 0b100000) != 0;
     }
+
+    constexpr void silentMove() {
+        isWhite = !isWhite;
+    }
+
+    constexpr void wCastle() {
+        wKingC = false;
+        wQueenC = false;
+    }
+
+    constexpr void bCastle() {
+        bKingC = false;
+        bQueenC = false;
+    }
+
+    constexpr void wMoveRookLeft() {
+        wQueenC = false;
+    }
+
+    constexpr void wMoveRookRight() {
+        wKingC = false;
+    }
+
+    constexpr void bMoveRookLeft() {
+        bQueenC = false;
+    }
+
+    constexpr void bMoveRookRight() {
+        bKingC = false;
+    }
+
+    constexpr void enableEnpassant() {
+        enpassant = true;
+    }
+
+    constexpr void disableEnpassant() {
+        enpassant = false;
+    }
+
+    template<bool isWhite>
+    constexpr void removeCastlingRights() {
+        if constexpr (isWhite) {
+            wKingC = false;
+            wQueenC = false;
+        } else {
+            bKingC = false;
+            bQueenC = false;
+        }
+        
+    }
+
+    template<bool isWhite>
+    constexpr void removeCastlingRightsLeft() {
+        if constexpr (isWhite) wQueenC = false;
+        else bQueenC = false;
+    }
+
+    template<bool isWhite>
+    constexpr void removeCastlingRightsRight() {
+        if constexpr (isWhite) wKingC = false;
+        else bKingC = false;
+    }
+
 };
 
 inline uint8_t getStatusPattern(const GameStatus status) {
@@ -64,6 +124,9 @@ struct GameState {
 
     Bitboard enpassant_board = 0ull;
 
+    uint32_t halfMoveClock = 0ul;
+    uint32_t fullMoveCount = 1ul;
+
     GameStatus status;
 };
 
@@ -84,6 +147,9 @@ GameState GameStateEmpty() {
     gameState.b_king = 0ull;
 
     gameState.enpassant_board = 0ull;
+
+    gameState.halfMoveClock = 0ul;
+    gameState.fullMoveCount = 1ul;
 
     GameStatus status;
     status.isWhite = true;
@@ -164,6 +230,11 @@ GameState parseFen(const std::string& fen) {
         state.enpassant_board = 1ULL << (rank * 8 + file);
     }
     state.status = status;
+
+    std::string halfMoveClockStr = tokens[4];
+    state.halfMoveClock = std::stoi(halfMoveClockStr);
+    std::string fullMoveCountStr = tokens[5];
+    state.fullMoveCount = std::stoi(fullMoveCountStr);
 
     return state;
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <deque>
 
 typedef uint64_t Bitboard;
 typedef uint16_t Move;
@@ -107,6 +108,41 @@ inline uint8_t getStatusPattern(const GameStatus status) {
     return status.isWhite | status.wKingC << 1 | status.wQueenC << 2 | status.bKingC << 3 | status.bQueenC << 4 | status.enpassant << 5;
 }
 
+// this is here to store past game states without the need
+// for halfMoveClock fullMoveCount and status
+struct PastGameState {
+    Bitboard w_pawn;
+    Bitboard w_rook;
+    Bitboard w_knight;
+    Bitboard w_bishop;
+    Bitboard w_queen;
+    Bitboard w_king;
+
+    Bitboard b_pawn;
+    Bitboard b_rook;
+    Bitboard b_knight;
+    Bitboard b_bishop;
+    Bitboard b_queen;
+    Bitboard b_king;
+
+    Bitboard enpassant_board;
+
+    PastGameState(const GameState& state) :
+        w_pawn(state.w_pawn),
+        w_rook(state.w_rook),
+        w_knight(state.w_knight),
+        w_bishop(state.w_bishop),
+        w_queen(state.w_queen),
+        w_king(state.w_king),
+        b_pawn(state.b_pawn),
+        b_rook(state.b_rook),
+        b_knight(state.b_knight),
+        b_bishop(state.b_bishop),
+        b_queen(state.b_queen),
+        b_king(state.b_king),
+        enpassant_board(state.enpassant_board) {}
+};
+
 struct GameState {
     Bitboard w_pawn   = 0x000000000000FF00;
     Bitboard w_rook   = 0x0000000000000081;
@@ -127,8 +163,17 @@ struct GameState {
     uint32_t halfMoveClock = 0ul;
     uint32_t fullMoveCount = 1ul;
 
+    std::array<PastGameState, 7> history;
+
     GameStatus status;
 };
+
+void addGameStateHistory(GameState& state, const PastGameState& pastState) {
+    for (int i = 6; i > 0; i--) {
+        state.history[i] = state.history[i - 1];
+    }
+    state.history[0] = pastState;
+}
 
 GameState GameStateEmpty() {
     GameState gameState;
@@ -163,6 +208,15 @@ GameState GameStateEmpty() {
     return gameState;
 }
 
+void setEnpassant(GameState& state, Bitboard enpassantBoard) {
+    state.enpassant_board = enpassantBoard;
+    state.status.enpassant = true;
+}
+
+void clearEnpassant(GameState& state) {
+    state.enpassant_board = 0ull;
+    state.status.enpassant = false;
+}
 
 GameState parseFen(const std::string& fen) {
     std::string tokens[6];

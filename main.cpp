@@ -28,6 +28,7 @@ public:
     Moves getPossibleMoves() const { return getLegalMoves(state); }
 
     void step(const Action action);
+    ChessObservation observe();
 };
 
 constexpr std::array<int8_t, 73> planeToOffsetWhite = {
@@ -199,7 +200,7 @@ bool updateGameState(GameState& state, uint8_t sourceSquare, uint8_t targetSquar
 
     const PieceType type = getPieceType<isWhite>(state, sourceSquare);
     const bool isEnpassantPossible = state.status.enpassant;
-    state.status.disableEnpassant();
+    clearEnpassant(state);
 
     if (isCastle<isWhite>(sourceSquare, targetSquare)) {
         handleCastling<isWhite>(state, sourceSquare, targetSquare);
@@ -223,8 +224,7 @@ bool updateGameState(GameState& state, uint8_t sourceSquare, uint8_t targetSquar
 
     // handle enable enpassant
     if (enablesEnpassant<isWhite>(state, sourceBoard, targetBoard, type)) {
-        state.enpassant_board = pawnPush1<isWhite>(sourceBoard);
-        state.status.enableEnpassant();
+        setEnpassant(state, pawnPush1<isWhite>(sourceBoard));
         return true;
     }
 
@@ -265,7 +265,7 @@ void updateMoveCount(GameState& state, bool reset) {
 template<bool isWhite>
 uint8_t getOffsetFromPlane(uint8_t plane) {
     if constexpr (isWhite) return planeToOffsetWhite[plane];
-    else planeToOffsetWhite[plane];
+    else return planeToOffsetWhite[plane];
 }
 
 template<bool isWhite>
@@ -290,6 +290,12 @@ void ChessGameEnv::step(Action action) {
     if (state.status.isWhite) makeMove<true>(state, action);
     else makeMove<false>(state, action);
 }
+
+ChessObservation ChessGameEnv::observe() {
+    ChessObservation obs;
+    return obs;
+}
+
 
 int main() {
     ChessGameEnv game;

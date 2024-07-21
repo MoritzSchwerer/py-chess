@@ -314,6 +314,8 @@ std::array<uint8_t, 128> generateOffsetToPlaneWhite() {
     }
     return inverted;
 }
+
+// TODO: this will overwrite with the pawn promotions need to fix that
 std::array<uint8_t, 128> offsetToPlaneWhite = generateOffsetToPlaneWhite();
 
 std::array<uint8_t, 128> generateOffsetToPlaneBlack() {
@@ -325,6 +327,7 @@ std::array<uint8_t, 128> generateOffsetToPlaneBlack() {
     }
     return inverted;
 }
+// TODO: this will overwrite with the pawn promotions need to fix that
 std::array<uint8_t, 128> offsetToPlaneBlack = generateOffsetToPlaneBlack();
 
 PieceType getPromotion(uint8_t plane) {

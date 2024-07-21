@@ -451,6 +451,7 @@ std::vector<bool> generateObservation(const GameState& state) {
     return obs;
 }
 
+// TODO: this only works for non promotions
 template<bool isWhite>
 uint64_t getMoveIndex(const Move move) {
     const uint64_t sourceSquare = move & 0b111111;

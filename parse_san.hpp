@@ -5,7 +5,7 @@
 
 #include "types.hpp"
 #include "moves.hpp"
-#include "movegen.hpp"
+#include "move_gen.hpp"
 
 Bitboard charToFile(const char file) {
     static const Bitboard fileBitboards[8] = {

@@ -1,7 +1,7 @@
 #define CATCH_CONFIG_MAIN
 #include "catch2/catch.hpp"
 
-#include "movegen.hpp"
+#include "move_gen.hpp"
 #include "types.hpp"
 #include "utils.hpp"
 

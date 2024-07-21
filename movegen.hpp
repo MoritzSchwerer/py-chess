@@ -616,7 +616,7 @@ Moves getLegalMovesTemplate(const GameState &state) {
 // Also we still need to implement the drawing mechanisms like 50 moves
 // and 3 fold repetition. CheckMate and StaleMate should be easy
 Moves getLegalMoves(const GameState &state) {
-    switch (getStatusPattern(state.status)) {
+    switch (state.status.getStatusPattern()) {
         case 0b000000: return getLegalMovesTemplate<GameStatus(0b000000ull)>(state);
         case 0b000001: return getLegalMovesTemplate<GameStatus(0b000001ull)>(state);
         case 0b000010: return getLegalMovesTemplate<GameStatus(0b000010ull)>(state);

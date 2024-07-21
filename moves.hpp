@@ -5,6 +5,7 @@
 #include <immintrin.h>
 
 #include "types.hpp"
+#include "game_state.hpp"
 #include "constants.hpp"
 
 // #define SquareOf(X) _tzcnt_u64(X)

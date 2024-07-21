@@ -8,12 +8,15 @@
 #include "utils.hpp"
 #include "parsesan.hpp"
 
-typedef uint16_t Action;
+using Action = uint16_t;
 
-// TODO: this is not set in stone
+constexpr int observationSpaceSize = 7104;
+constexpr int actionSpaceSize = 4672; 
+constexpr int numActionPlanes = 73;
+
 struct ChessObservation {
-    std::array<bool, 7104> observation;
-    std::array<bool, 4672> actionMask;
+    std::array<bool, observationSpaceSize> observation;
+    std::array<bool, actionSpaceSize> actionMask;
     bool isTerminated;
     bool isTruncated;
 };
@@ -200,7 +203,7 @@ bool updateGameState(GameState& state, uint8_t sourceSquare, uint8_t targetSquar
 
     const PieceType type = getPieceType<isWhite>(state, sourceSquare);
     const bool isEnpassantPossible = state.status.enpassant;
-    clearEnpassant(state);
+    state.clearEnpassant();
 
     if (isCastle<isWhite>(sourceSquare, targetSquare)) {
         handleCastling<isWhite>(state, sourceSquare, targetSquare);
@@ -224,7 +227,7 @@ bool updateGameState(GameState& state, uint8_t sourceSquare, uint8_t targetSquar
 
     // handle enable enpassant
     if (enablesEnpassant<isWhite>(state, sourceBoard, targetBoard, type)) {
-        setEnpassant(state, pawnPush1<isWhite>(sourceBoard));
+        state.setEnpassant(pawnPush1<isWhite>(sourceBoard));
         return true;
     }
 
@@ -270,8 +273,8 @@ uint8_t getOffsetFromPlane(uint8_t plane) {
 
 template<bool isWhite>
 void makeMove(GameState& state, Action action) {
-    const uint8_t sourceSquare = action / 73;
-    const uint8_t plane = action % 73;
+    const uint8_t sourceSquare = action / numActionPlanes;
+    const uint8_t plane = action % numActionPlanes;
     const int8_t offset = getOffsetFromPlane<isWhite>(plane);
     const uint8_t targetSquare = sourceSquare + offset;
 
@@ -299,11 +302,11 @@ ChessObservation ChessGameEnv::observe() {
 
 int main() {
     ChessGameEnv game;
-    game.step(8*73 + 1);
-    game.step(63*73 + 29);
-    game.step(24*73 + 0);
-    game.step(49*73 + 29);
-    game.step(32*73 + 7);
+    game.step(8*numActionPlanes + 1);
+    game.step(63*numActionPlanes + 29);
+    game.step(24*numActionPlanes + 0);
+    game.step(49*numActionPlanes + 29);
+    game.step(32*numActionPlanes + 7);
 
     return 0;
 }

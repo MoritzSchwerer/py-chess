@@ -293,4 +293,26 @@ std::array<std::array<Bitboard, rookAttackMaskSize>, 64> generatePerSquareXrayRo
 
 std::array<std::array<Bitboard, rookAttackMaskSize>, 64> perSquareXrayRookAttacks = generatePerSquareXrayRookAttacks();
 
+
+constexpr std::array<int8_t, 73> planeToOffsetWhite = {
+    /* queen moves */ 8, 16, 24, 32, 40, 48, 56, 9, 18, 27, 36, 45, 54, 63, 1, 2, 3, 4, 5, 6, 7, -7, -14, -21, -28, -35, -42, -49, -8, -16, -24, -32, -40, -48, -56, -9, -18, -27, -36, -45, -54, -63, -1, -2, -3, -4, -5, -6, -7, 7, 14, 21, 28, 35, 42, 49,
+    /* knight moves */ 15, 17, 10, -6, -15, -17, 6, -10,
+    /* pawn moves (L, P, R) (N, B, R)*/ 7, 7, 7, 8, 8, 8, 9, 9, 9
+};
+constexpr std::array<int8_t, 73> planeToOffsetBlack = {
+    /* queen moves */ 8, 16, 24, 32, 40, 48, 56, 9, 18, 27, 36, 45, 54, 63, 1, 2, 3, 4, 5, 6, 7, -7, -14, -21, -28, -35, -42, -49, -8, -16, -24, -32, -40, -48, -56, -9, -18, -27, -36, -45, -54, -63, -1, -2, -3, -4, -5, -6, -7, 7, 14, 21, 28, 35, 42, 49,
+    /* knight moves */ 15, 17, 10, -6, -15, -17, 6, -10,
+    /* pawn moves (L, P, R) (N, B, R)*/ -9, -9, -9, -8, -8, -8, -7, -7, -7
+};
+
+PieceType getPromotion(uint8_t plane) {
+    if (plane < 64) return PieceType::Queen;
+    switch ((plane - 64) % 3) {
+        case 0: return PieceType::Knight;
+        case 1: return PieceType::Bishop;
+        case 2: return PieceType::Rook;
+        default: return PieceType::None;
+    }
+}
+
 }

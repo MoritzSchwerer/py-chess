@@ -9,8 +9,7 @@
 #include "move_gen.hpp"
 #include "utils.hpp"
 #include "parse_san.hpp"
-
-using Action = uint16_t;
+#include "lookup.hpp"
 
 constexpr int observationSpaceSize = 7104;
 constexpr int actionSpaceSize = 4672; 
@@ -34,17 +33,6 @@ public:
 
     void step(const Action action);
     ChessObservation observe();
-};
-
-constexpr std::array<int8_t, 73> planeToOffsetWhite = {
-    /* queen moves */ 8, 16, 24, 32, 40, 48, 56, 9, 18, 27, 36, 45, 54, 63, 1, 2, 3, 4, 5, 6, 7, -7, -14, -21, -28, -35, -42, -49, -8, -16, -24, -32, -40, -48, -56, -9, -18, -27, -36, -45, -54, -63, -1, -2, -3, -4, -5, -6, -7, 7, 14, 21, 28, 35, 42, 49,
-    /* knight moves */ 15, 17, 10, -6, -15, -17, 6, -10,
-    /* pawn moves (L, P, R) (N, B, R)*/ 7, 7, 7, 8, 8, 8, 9, 9, 9
-};
-constexpr std::array<int8_t, 73> planeToOffsetBlack = {
-    /* queen moves */ 8, 16, 24, 32, 40, 48, 56, 9, 18, 27, 36, 45, 54, 63, 1, 2, 3, 4, 5, 6, 7, -7, -14, -21, -28, -35, -42, -49, -8, -16, -24, -32, -40, -48, -56, -9, -18, -27, -36, -45, -54, -63, -1, -2, -3, -4, -5, -6, -7, 7, 14, 21, 28, 35, 42, 49,
-    /* knight moves */ 15, 17, 10, -6, -15, -17, 6, -10,
-    /* pawn moves (L, P, R) (N, B, R)*/ -9, -9, -9, -8, -8, -8, -7, -7, -7
 };
 
 template<bool isWhite>
@@ -238,16 +226,6 @@ bool updateGameState(GameState& state, uint8_t sourceSquare, uint8_t targetSquar
     return tookEnemyPiece || type == PieceType::Pawn;
 }
 
-PieceType getPromotion(uint8_t plane) {
-    if (plane < 64) return PieceType::Queen;
-    switch ((plane - 64) % 3) {
-        case 0: return PieceType::Knight;
-        case 1: return PieceType::Bishop;
-        case 2: return PieceType::Rook;
-        default: return PieceType::None;
-    }
-}
-
 template<bool isWhite>
 bool enablesEnpassant(GameState& state, Bitboard sourceBoard, Bitboard targetBoard, PieceType type) {
     const Bitboard enemyPawns = getEnemyPawns<isWhite>(state);
@@ -269,8 +247,8 @@ void updateMoveCount(GameState& state, bool reset) {
 
 template<bool isWhite>
 uint8_t getOffsetFromPlane(uint8_t plane) {
-    if constexpr (isWhite) return planeToOffsetWhite[plane];
-    else return planeToOffsetWhite[plane];
+    if constexpr (isWhite) return Lookup::planeToOffsetWhite[plane];
+    else return Lookup::planeToOffsetWhite[plane];
 }
 
 template<bool isWhite>
@@ -280,7 +258,7 @@ void makeMove(GameState& state, Action action) {
     const int8_t offset = getOffsetFromPlane<isWhite>(plane);
     const uint8_t targetSquare = sourceSquare + offset;
 
-    const PieceType promotion = getPromotion(plane);
+    const PieceType promotion = Lookup::getPromotion(plane);
 
     bool resetHalfMoveClock = updateGameState<isWhite>(state, sourceSquare, targetSquare, promotion);
 

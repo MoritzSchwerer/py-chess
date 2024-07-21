@@ -45,7 +45,10 @@ struct GameState {
     Bitboard enpassant_board;
     uint32_t halfMoveClock;
     uint32_t fullMoveCount;
+
     std::array<PastGameState, 7> history;
+    std::map<uint64_t, int> zobristKeys;
+
     GameStatus status;
 
     GameState() : 
@@ -65,6 +68,7 @@ struct GameState {
         halfMoveClock(0ul),
         fullMoveCount(1ul),
         history(),
+        zobristKeys(),
         status() {
             status.isWhite = true;
             status.wKingC = true;

@@ -305,6 +305,28 @@ constexpr std::array<int8_t, 73> planeToOffsetBlack = {
     /* pawn moves (L, P, R) (N, B, R)*/ -9, -9, -9, -8, -8, -8, -7, -7, -7
 };
 
+std::array<uint8_t, 128> generateOffsetToPlaneWhite() {
+    std::array<uint8_t, 128> inverted;
+    // we do + 64 to ensure that we don't occur negative values
+    for (int i = 0; i < 73; i++) {
+        const uint8_t element = planeToOffsetWhite[i] + 64;
+        inverted[element] = i;
+    }
+    return inverted;
+}
+std::array<uint8_t, 128> offsetToPlaneWhite = generateOffsetToPlaneWhite();
+
+std::array<uint8_t, 128> generateOffsetToPlaneBlack() {
+    std::array<uint8_t, 128> inverted;
+    // we do + 64 to ensure that we don't occur negative values
+    for (int i = 0; i < 73; i++) {
+        const uint8_t element = planeToOffsetBlack[i] + 64;
+        inverted[element] = i;
+    }
+    return inverted;
+}
+std::array<uint8_t, 128> offsetToPlaneBlack = generateOffsetToPlaneBlack();
+
 PieceType getPromotion(uint8_t plane) {
     if (plane < 64) return PieceType::Queen;
     switch ((plane - 64) % 3) {

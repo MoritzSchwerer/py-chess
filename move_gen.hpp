@@ -8,15 +8,11 @@
 #include "moves.hpp"
 #include "utils.hpp"
 
+namespace Movegen {
 Move create_move(Bitboard from, Bitboard to, uint64_t flags) {
     return (from & 0x3f) | ((to & 0x3f) << 6) | ((flags & 0xf) << 12);
 }
 
-// TODO: we need to make sure that the slider checks only include
-// the squares in the direction to the enemy king and not the other
-// direction.
-// Solution: lookup slider attacks from king towards the attacking piece
-// and & that with the slider attack mask
 template<bool isWhite>
 Bitboard getCheckMask(GameState state) {
     const Bitboard enemies = getEnemyPieces<isWhite>(state);
@@ -605,16 +601,6 @@ Moves getLegalMovesTemplate(const GameState &state) {
     return moves;
 }
 
-// TODO: this should be the entry point.
-// after we parse the board and want to generate all legal acttions
-// via this function
-//
-// we then still need to make the move and change up the boards
-// this will be done via the state machine pattern through the
-// GameStatus struct
-//
-// Also we still need to implement the drawing mechanisms like 50 moves
-// and 3 fold repetition. CheckMate and StaleMate should be easy
 Moves getLegalMoves(const GameState &state) {
     switch (state.status.getStatusPattern()) {
         case 0b000000: return getLegalMovesTemplate<GameStatus(0b000000ull)>(state);
@@ -684,4 +670,6 @@ Moves getLegalMoves(const GameState &state) {
         default:
             throw std::runtime_error("Error: the pattern should be exaustive but failed");
     }
+}
+
 }

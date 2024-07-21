@@ -1,3 +1,6 @@
+#include <array>
+#include <vector>
+
 #include "game_env.hpp"
 
 int main() {

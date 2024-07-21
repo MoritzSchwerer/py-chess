@@ -92,16 +92,16 @@ Move sanToMove(std::string san, const GameState &state) {
         // if regex doesn't match check for castle
         if (san == "O-O") {
             if constexpr (isWhite) {
-                return create_move(4ull, 7ull, 0b0010);
+                return Movegen::create_move(4ull, 7ull, 0b0010);
             } else {
-                return create_move(60ull, 63ull, 0b0010);
+                return Movegen::create_move(60ull, 63ull, 0b0010);
             }
         } 
         if (san == "O-O-O") {
             if constexpr (isWhite) {
-                return create_move(4ull, 0ull, 0b0011);
+                return Movegen::create_move(4ull, 0ull, 0b0011);
             } else {
-                return create_move(60ull, 56ull, 0b0011);
+                return Movegen::create_move(60ull, 56ull, 0b0011);
             }
         }
         throw std::runtime_error("Error: couldn't match SAN: " + san);

@@ -4,22 +4,52 @@
 #include <string>
 #include <array>
 #include <exception>
+#include <algorithm>
+#include <map>
 
 #include "types.hpp"
 #include "move_gen.hpp"
 #include "utils.hpp"
 #include "parse_san.hpp"
 #include "lookup.hpp"
+#include "zobrist.hpp"
 
 constexpr int observationSpaceSize = 7104;
 constexpr int actionSpaceSize = 4672; 
 constexpr int numActionPlanes = 73;
 
-struct ChessObservation {
-    std::array<bool, observationSpaceSize> observation;
-    std::array<bool, actionSpaceSize> actionMask;
+struct TerminationInfo {
+    int32_t whiteReward;
+    int32_t blackReward;
     bool isTerminated;
-    bool isTruncated;
+
+    TerminationInfo(int32_t whiteReward, int32_t blackReward, bool isTerminated)
+      : whiteReward(whiteReward),
+        blackReward(blackReward),
+        isTerminated(isTerminated) {}
+};
+
+struct ChessObservation {
+    std::vector<bool> observation;
+    std::vector<bool> actionMask;
+    int32_t whiteReward;
+    int32_t blackReward;
+    bool isTerminated;
+
+    ChessObservation() = default;
+    ChessObservation(ChessObservation&& other)  noexcept
+        : observation(std::move(other.observation)),
+          actionMask(std::move(other.actionMask)),
+          whiteReward(other.whiteReward),
+          blackReward(other.blackReward),
+          isTerminated(other.isTerminated) {}
+
+    ChessObservation(std::vector<bool>&& observation, std::vector<bool>&& actionMask, int whiteReward, int blackReward, bool isTerminated)
+        : observation(std::move(observation)),
+          actionMask(std::move(actionMask)),
+          whiteReward(whiteReward),
+          blackReward(blackReward),
+          isTerminated(isTerminated) {}
 };
 
 class ChessGameEnv {
@@ -29,7 +59,7 @@ public:
     ChessGameEnv() {}
     ChessGameEnv(const std::string &fen) : state(parseFen(fen)) {}
 
-    Moves getPossibleMoves() const { return getLegalMoves(state); }
+    Moves getPossibleMoves() const { return Movegen::getLegalMoves(state); }
 
     void step(const Action action);
     ChessObservation observe();
@@ -265,18 +295,275 @@ void makeMove(GameState& state, Action action) {
     updateMoveCount<isWhite>(state, resetHalfMoveClock);
 
     state.status.silentMove();
+
+    // hash board and add hash to map
+    const uint64_t positionHash = Zobrist::hashBoard<isWhite>(state);
+    // should be zero if it does not exist
+    int currentValue = state.zobristKeys[positionHash];
+    state.zobristKeys[positionHash] = currentValue + 1;
 }
 
-// this will perform a move in the game
-// this is a no legality check version
 void ChessGameEnv::step(Action action) {
+    state.addHistory(PastGameState(state));
     if (state.status.isWhite) makeMove<true>(state, action);
     else makeMove<false>(state, action);
 }
 
-ChessObservation ChessGameEnv::observe() {
-    ChessObservation obs;
+// Channels 0 - 3: Castling rights:
+// Channel 4: Is black or white
+// Channel 5: Move clock
+// Channel 6: Detect borders
+// Channel 7 - 18: Pieces/Color (12)
+// Channel 19: Is 2-fold repetition
+// Channel 20 - 111 Previous 7 positions (most recent first)
+//
+void fillObservationWithBoard(std::vector<bool>& obs, const PastGameState& pastState, int startOffset, bool isWhite) {
+    constexpr int pawnOffset = 0;
+    constexpr int rookOffset = 1;
+    constexpr int knightOffset = 2;
+    constexpr int bishopOffset = 3;
+    constexpr int queenOffset = 4;
+    constexpr int kingOffset = 5;
+    constexpr int whiteOffset = 0;
+    constexpr int blackOffset = 6;
+
+    Bitboard w_pawn = pastState.w_pawn;
+    Bitboard w_rook = pastState.w_pawn;
+    Bitboard w_knight = pastState.w_pawn;
+    Bitboard w_bishop = pastState.w_pawn;
+    Bitboard w_queen = pastState.w_pawn;
+    Bitboard w_king = pastState.w_pawn;
+
+    Bitboard b_pawn = pastState.b_pawn;
+    Bitboard b_rook = pastState.b_pawn;
+    Bitboard b_knight = pastState.b_pawn;
+    Bitboard b_bishop = pastState.b_pawn;
+    Bitboard b_queen = pastState.b_pawn;
+    Bitboard b_king = pastState.b_pawn;
+
+    Bitboard enpassant = pastState.enpassant_board;
+    if (isWhite) {
+        // black pawn can be taken enpassant on 6th rank we move it to 8th rank
+        b_pawn |= enpassant << 16;
+    } else {
+        // white pawn can be taken enpassant on 3rd rank we move it to 8th rank
+        w_pawn |= enpassant << 40;
+    }
+
+    Bitloop(w_pawn) {
+        const uint64_t sourceSquare = SquareOf(w_pawn);
+        obs[startOffset+whiteOffset+pawnOffset+sourceSquare] = true;
+    }
+    Bitloop(w_rook) {
+        const uint64_t sourceSquare = SquareOf(w_rook);
+        obs[startOffset+whiteOffset+rookOffset+sourceSquare] = true;
+    }
+    Bitloop(w_knight) {
+        const uint64_t sourceSquare = SquareOf(w_knight);
+        obs[startOffset+whiteOffset+knightOffset+sourceSquare] = true;
+    }
+    Bitloop(w_bishop) {
+        const uint64_t sourceSquare = SquareOf(w_bishop);
+        obs[startOffset+whiteOffset+bishopOffset+sourceSquare] = true;
+    }
+    Bitloop(w_queen) {
+        const uint64_t sourceSquare = SquareOf(w_queen);
+        obs[startOffset+whiteOffset+queenOffset+sourceSquare] = true;
+    }
+    Bitloop(w_king) {
+        const uint64_t sourceSquare = SquareOf(w_king);
+        obs[startOffset+whiteOffset+kingOffset+sourceSquare] = true;
+    }
+
+    Bitloop(b_pawn) {
+        const uint64_t sourceSquare = SquareOf(b_pawn);
+        obs[startOffset+blackOffset+pawnOffset+sourceSquare] = true;
+    }
+    Bitloop(b_rook) {
+        const uint64_t sourceSquare = SquareOf(b_rook);
+        obs[startOffset+blackOffset+rookOffset+sourceSquare] = true;
+    }
+    Bitloop(b_knight) {
+        const uint64_t sourceSquare = SquareOf(b_knight);
+        obs[startOffset+blackOffset+knightOffset+sourceSquare] = true;
+    }
+    Bitloop(b_bishop) {
+        const uint64_t sourceSquare = SquareOf(b_bishop);
+        obs[startOffset+blackOffset+bishopOffset+sourceSquare] = true;
+    }
+    Bitloop(b_queen) {
+        const uint64_t sourceSquare = SquareOf(b_queen);
+        obs[startOffset+blackOffset+queenOffset+sourceSquare] = true;
+    }
+    Bitloop(b_king) {
+        const uint64_t sourceSquare = SquareOf(b_king);
+        obs[startOffset+blackOffset+kingOffset+sourceSquare] = true;
+    }
+}
+
+void addEdgeFinder(std::vector<bool>& obs, int startOffset) {
+    Bitboard border = RANK_1 | RANK_8 | FILE_A | FILE_H;
+    Bitloop(border) {
+        const uint64_t offset = SquareOf(border);
+        obs[startOffset+offset] = true;
+    }
+}
+
+std::vector<bool> generateObservation(const GameState& state) {
+    constexpr int channelSize = 64;
+    constexpr int sideToMoveOffset = channelSize * 4;
+    constexpr int moveClockOffset = channelSize * 5;
+    constexpr int edgeFinderOffset = channelSize * 6;
+    constexpr int currentBoardOffset = channelSize * 7;
+    constexpr int boardSize = channelSize * 13;
+    constexpr int numPastBoards = 7;
+
+    std::vector<bool> obs(observationSpaceSize);
+
+    // castling
+    std::fill_n(obs.begin() + channelSize * 0, channelSize, state.status.wQueenC);
+    std::fill_n(obs.begin() + channelSize * 1, channelSize, state.status.wKingC);
+    std::fill_n(obs.begin() + channelSize * 2, channelSize, state.status.bQueenC);
+    std::fill_n(obs.begin() + channelSize * 3, channelSize, state.status.wKingC);
+
+    // side to move
+    std::fill_n(obs.begin() + sideToMoveOffset, channelSize, state.status.isWhite);
+
+    // 50 move clock
+    const int moveClockIndex = state.halfMoveClock;
+    obs[moveClockOffset + moveClockIndex] = true;
+
+    // edge finder
+    addEdgeFinder(obs, edgeFinderOffset);
+
+    // TODO: still need 2 fold repetition here (zobrist keys)
+    // current board + 2 fold repetition
+    const PastGameState curState = PastGameState(state);
+    fillObservationWithBoard(obs, curState, currentBoardOffset, state.status.isWhite);
+
+    // past boards
+    for (int i = 0; i < numPastBoards; i++) {
+        const bool isWhite = (i % 2 == 0) ? state.status.isWhite : !state.status.isWhite;
+        const PastGameState oldState = state.history[i];
+        const int startOffset = currentBoardOffset + (boardSize * (i + 1));
+        fillObservationWithBoard(obs, oldState, startOffset, isWhite);
+    }
     return obs;
 }
 
+template<bool isWhite>
+uint64_t getMoveIndex(const Move move) {
+    const uint64_t sourceSquare = move & 0b111111;
+    const uint64_t targetSquare = move >> 6 & 0b111111;
+    const uint64_t flags = move >> 12 & 0b1111;
 
+    // this puts the starting location at square 0
+    const uint64_t normalizedTarget = (targetSquare - sourceSquare) + 64;
+
+    // table lookup what move that is
+    uint64_t moveTypeIndex;
+    if constexpr (isWhite) {
+        moveTypeIndex = Lookup::offsetToPlaneWhite[normalizedTarget];
+    } else {
+        moveTypeIndex = Lookup::offsetToPlaneBlack[normalizedTarget];
+    }
+
+    return sourceSquare * moveTypeIndex + sourceSquare;
+}
+
+template<bool isWhite>
+std::vector<bool> generateLegalActionMask(const GameState& state) {
+    Moves moves = Movegen::getLegalMoves(state);
+    std::vector<bool> legalActionMask(actionSpaceSize);
+    for (const Move& move : moves) {
+        const uint64_t moveIndex = getMoveIndex<isWhite>(move);
+        legalActionMask[moveIndex] = true;
+    }
+    return legalActionMask;
+}
+
+template<bool isWhite>
+bool isCheckMate(const GameState& state) {
+    const Bitboard enemySeenSquares = Movegen::getSeenSquares<!isWhite>(state);
+    const Bitboard ownKing = getKing<isWhite>(state);
+
+    // king is in check
+    if (enemySeenSquares & ownKing) {
+        // there are no legal moves
+        const Moves legalMoves = Movegen::getLegalMoves(state);
+        if (legalMoves.size() == 0) {
+            return true;
+        }
+
+    }
+    return false;
+}
+
+template<bool isWhite>
+bool isStaleMate(const GameState& state) {
+    const Bitboard enemySeenSquares = Movegen::getSeenSquares<!isWhite>(state);
+    const Bitboard ownKing = getKing<isWhite>(state);
+
+    // king is in check
+    if (enemySeenSquares & ownKing) {
+        return false;
+    }
+
+    // there are no legal moves
+    const Moves legalMoves = Movegen::getLegalMoves(state);
+    if (legalMoves.size() == 0) {
+        return true;
+    }
+    return false;
+}
+
+// TODO: still need to reset this clock correctly
+bool isDrawBy50Moves(const GameState& state) {
+    if (state.halfMoveClock >= 100) {
+        return true;
+    }
+    return false;
+}
+
+// TODO: yea this will be zobrest keys I fear
+bool isDrawBy3FoldRepetition(const GameState& state) {
+    return false;
+}
+
+template<bool isWhite>
+TerminationInfo checkForTermination(const GameState& state) {
+    if (isCheckMate<isWhite>(state)) {
+        if constexpr (isWhite) {
+            return TerminationInfo {-1, 1, true};
+        } else {
+            return TerminationInfo {1, -1, true};
+        }
+    }
+
+    if (isStaleMate<isWhite>(state) || isDrawBy50Moves(state) || isDrawBy3FoldRepetition(state)) {
+        return TerminationInfo {
+            0, 0, true
+        };
+
+    }
+    return TerminationInfo {
+        0, 0, false
+    };
+}
+
+template<bool isWhite>
+ChessObservation observeTemplate(const GameState& state) {
+    const TerminationInfo term = checkForTermination<isWhite>(state);
+    return ChessObservation{
+        generateObservation(state),
+        generateLegalActionMask<isWhite>(state),
+        term.whiteReward,
+        term.blackReward,
+        term.isTerminated
+    };
+}
+
+ChessObservation ChessGameEnv::observe() {
+    if (state.status.isWhite) return observeTemplate<true>(state);
+    else return observeTemplate<false>(state);
+}

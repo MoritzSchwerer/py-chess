@@ -73,10 +73,6 @@ TEST_CASE("BroadcastSingleToMask all zeros") {
     REQUIRE(broadcasted == 0ull);
 }
 
-// TODO: test legal pawn moves
-
-
-
 // takes king and pawn possition in fen notation
 #define GENERATE_PAWN_CHECKMASK_TEST(pawn, king, isCheck) \
 TEST_CASE("Pawn on " + std::string(pawn) + " " + (isCheck ? "attacks" : "does not attack") + " king on " + std::string(king), "[checkmask][pawn]") { \
@@ -119,10 +115,7 @@ TEST_CASE("Knight on " + std::string(knight) + " " + (isCheck ? "attacks" : "doe
     REQUIRE(checkMask == result); \
 }
 
-// TODO: generate more
-// should all be checks
 GENERATE_KNIGHT_CHECKMASK_TEST("e2", "f4", true);
-
 
 
 #define GENERATE_ROOK_CHECKMASK_TEST(rook, king, expectedCheckMask) \

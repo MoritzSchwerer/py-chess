@@ -139,7 +139,7 @@ bool removeEnemyPiece(GameState& state, Bitboard targetBoard) {
         state.b_rook &= ~targetBoard;
         state.b_queen &= ~targetBoard;
         state.b_king &= ~targetBoard;
-        return state.b_pawn & targetBoard | state.b_knight & targetBoard | state.b_bishop & targetBoard | state.b_rook & targetBoard | state.b_queen & targetBoard | state.b_king & targetBoard;
+        return (state.b_pawn & targetBoard) | (state.b_knight & targetBoard) | (state.b_bishop & targetBoard) | (state.b_rook & targetBoard) | (state.b_queen & targetBoard) | (state.b_king & targetBoard);
     } else {
         state.w_pawn &= ~targetBoard;
         state.w_knight &= ~targetBoard;
@@ -147,7 +147,7 @@ bool removeEnemyPiece(GameState& state, Bitboard targetBoard) {
         state.w_rook &= ~targetBoard;
         state.w_queen &= ~targetBoard;
         state.w_king &= ~targetBoard;
-        return state.w_pawn & targetBoard | state.w_knight & targetBoard | state.w_bishop & targetBoard | state.w_rook & targetBoard | state.w_queen & targetBoard | state.w_king & targetBoard;
+        return (state.w_pawn & targetBoard) | (state.w_knight & targetBoard) | (state.w_bishop & targetBoard) | (state.w_rook & targetBoard) | (state.w_queen & targetBoard) | (state.w_king & targetBoard);
     }
 }
 

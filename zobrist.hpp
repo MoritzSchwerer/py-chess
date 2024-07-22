@@ -2,6 +2,9 @@
 
 #include <cassert>
 
+#include "game_state.hpp"
+#include "moves.hpp"
+
 namespace Zobrist {
 
 constexpr uint64_t numPiecePositionColorElements = 768;

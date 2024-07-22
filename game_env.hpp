@@ -12,11 +12,13 @@
 #include "utils.hpp"
 #include "parse_san.hpp"
 #include "lookup.hpp"
-#include "zobrist.hpp"
+#include "game_state.hpp"
+// #include "zobrist.hpp"
 
 constexpr int observationSpaceSize = 7104;
 constexpr int actionSpaceSize = 4672; 
 constexpr int numActionPlanes = 73;
+constexpr int PLANE_SIZE = 64;
 
 struct TerminationInfo {
     int32_t whiteReward;
@@ -295,29 +297,16 @@ void makeMove(GameState& state, Action action) {
     updateMoveCount<isWhite>(state, resetHalfMoveClock);
 
     state.status.silentMove();
-
-    // hash board and add hash to map
-    const uint64_t positionHash = Zobrist::hashBoard<isWhite>(state);
-    // should be zero if it does not exist
-    int currentValue = state.zobristKeys[positionHash];
-    state.zobristKeys[positionHash] = currentValue + 1;
 }
 
 void ChessGameEnv::step(Action action) {
     state.addHistory(PastGameState(state));
+
     if (state.status.isWhite) makeMove<true>(state, action);
     else makeMove<false>(state, action);
 }
 
-// Channels 0 - 3: Castling rights:
-// Channel 4: Is black or white
-// Channel 5: Move clock
-// Channel 6: Detect borders
-// Channel 7 - 18: Pieces/Color (12)
-// Channel 19: Is 2-fold repetition
-// Channel 20 - 111 Previous 7 positions (most recent first)
-//
-void fillObservationWithBoard(std::vector<bool>& obs, const PastGameState& pastState, int startOffset, bool isWhite) {
+void fillObservationWithBoard(std::vector<bool>& obs, const PastGameState& pastState, int startOffset, bool isWhite, bool is2FoldRep) {
     constexpr int pawnOffset = 0;
     constexpr int rookOffset = 1;
     constexpr int knightOffset = 2;
@@ -326,6 +315,7 @@ void fillObservationWithBoard(std::vector<bool>& obs, const PastGameState& pastS
     constexpr int kingOffset = 5;
     constexpr int whiteOffset = 0;
     constexpr int blackOffset = 6;
+    constexpr int repetitionOffset = 12;
 
     Bitboard w_pawn = pastState.w_pawn;
     Bitboard w_rook = pastState.w_pawn;
@@ -342,6 +332,7 @@ void fillObservationWithBoard(std::vector<bool>& obs, const PastGameState& pastS
     Bitboard b_king = pastState.b_pawn;
 
     Bitboard enpassant = pastState.enpassant_board;
+    
     if (isWhite) {
         // black pawn can be taken enpassant on 6th rank we move it to 8th rank
         b_pawn |= enpassant << 16;
@@ -352,53 +343,54 @@ void fillObservationWithBoard(std::vector<bool>& obs, const PastGameState& pastS
 
     Bitloop(w_pawn) {
         const uint64_t sourceSquare = SquareOf(w_pawn);
-        obs[startOffset+whiteOffset+pawnOffset+sourceSquare] = true;
+        obs[startOffset+(whiteOffset+pawnOffset)*PLANE_SIZE+sourceSquare] = true;
     }
     Bitloop(w_rook) {
         const uint64_t sourceSquare = SquareOf(w_rook);
-        obs[startOffset+whiteOffset+rookOffset+sourceSquare] = true;
+        obs[startOffset+(whiteOffset+rookOffset)*PLANE_SIZE+sourceSquare] = true;
     }
     Bitloop(w_knight) {
         const uint64_t sourceSquare = SquareOf(w_knight);
-        obs[startOffset+whiteOffset+knightOffset+sourceSquare] = true;
+        obs[startOffset+(whiteOffset+knightOffset)*PLANE_SIZE+sourceSquare] = true;
     }
     Bitloop(w_bishop) {
         const uint64_t sourceSquare = SquareOf(w_bishop);
-        obs[startOffset+whiteOffset+bishopOffset+sourceSquare] = true;
+        obs[startOffset+(whiteOffset+bishopOffset)*PLANE_SIZE+sourceSquare] = true;
     }
     Bitloop(w_queen) {
         const uint64_t sourceSquare = SquareOf(w_queen);
-        obs[startOffset+whiteOffset+queenOffset+sourceSquare] = true;
+        obs[startOffset+(whiteOffset+queenOffset)*PLANE_SIZE+sourceSquare] = true;
     }
     Bitloop(w_king) {
         const uint64_t sourceSquare = SquareOf(w_king);
-        obs[startOffset+whiteOffset+kingOffset+sourceSquare] = true;
+        obs[startOffset+(whiteOffset+kingOffset)*PLANE_SIZE+sourceSquare] = true;
     }
 
     Bitloop(b_pawn) {
         const uint64_t sourceSquare = SquareOf(b_pawn);
-        obs[startOffset+blackOffset+pawnOffset+sourceSquare] = true;
+        obs[startOffset+(blackOffset+pawnOffset)*PLANE_SIZE+sourceSquare] = true;
     }
     Bitloop(b_rook) {
         const uint64_t sourceSquare = SquareOf(b_rook);
-        obs[startOffset+blackOffset+rookOffset+sourceSquare] = true;
+        obs[startOffset+(blackOffset+rookOffset)*PLANE_SIZE+sourceSquare] = true;
     }
     Bitloop(b_knight) {
         const uint64_t sourceSquare = SquareOf(b_knight);
-        obs[startOffset+blackOffset+knightOffset+sourceSquare] = true;
+        obs[startOffset+(blackOffset+knightOffset)*PLANE_SIZE+sourceSquare] = true;
     }
     Bitloop(b_bishop) {
         const uint64_t sourceSquare = SquareOf(b_bishop);
-        obs[startOffset+blackOffset+bishopOffset+sourceSquare] = true;
+        obs[startOffset+(blackOffset+bishopOffset)*PLANE_SIZE+sourceSquare] = true;
     }
     Bitloop(b_queen) {
         const uint64_t sourceSquare = SquareOf(b_queen);
-        obs[startOffset+blackOffset+queenOffset+sourceSquare] = true;
+        obs[startOffset+(blackOffset+queenOffset)*PLANE_SIZE+sourceSquare] = true;
     }
     Bitloop(b_king) {
         const uint64_t sourceSquare = SquareOf(b_king);
-        obs[startOffset+blackOffset+kingOffset+sourceSquare] = true;
+        obs[startOffset+(blackOffset+kingOffset)*PLANE_SIZE+sourceSquare] = true;
     }
+    std::fill_n(obs.begin() + startOffset + PLANE_SIZE * repetitionOffset, PLANE_SIZE, is2FoldRep);
 }
 
 void addEdgeFinder(std::vector<bool>& obs, int startOffset) {
@@ -409,25 +401,32 @@ void addEdgeFinder(std::vector<bool>& obs, int startOffset) {
     }
 }
 
+bool occursMoreThan(const std::map<uint64_t, int>& map, uint64_t hash, int threshold) {
+    auto it = map.find(hash);
+    if (it != map.end() && it->second > threshold)  {
+        return true;
+    }
+    return false;
+}
+
 std::vector<bool> generateObservation(const GameState& state) {
-    constexpr int channelSize = 64;
-    constexpr int sideToMoveOffset = channelSize * 4;
-    constexpr int moveClockOffset = channelSize * 5;
-    constexpr int edgeFinderOffset = channelSize * 6;
-    constexpr int currentBoardOffset = channelSize * 7;
-    constexpr int boardSize = channelSize * 13;
+    constexpr int sideToMoveOffset = PLANE_SIZE * 4;
+    constexpr int moveClockOffset = PLANE_SIZE * 5;
+    constexpr int edgeFinderOffset = PLANE_SIZE * 6;
+    constexpr int currentBoardOffset = PLANE_SIZE * 7;
+    constexpr int boardSize = PLANE_SIZE * 13;
     constexpr int numPastBoards = 7;
 
     std::vector<bool> obs(observationSpaceSize);
 
     // castling
-    std::fill_n(obs.begin() + channelSize * 0, channelSize, state.status.wQueenC);
-    std::fill_n(obs.begin() + channelSize * 1, channelSize, state.status.wKingC);
-    std::fill_n(obs.begin() + channelSize * 2, channelSize, state.status.bQueenC);
-    std::fill_n(obs.begin() + channelSize * 3, channelSize, state.status.wKingC);
+    std::fill_n(obs.begin() + PLANE_SIZE * 0, PLANE_SIZE, state.status.wQueenC);
+    std::fill_n(obs.begin() + PLANE_SIZE * 1, PLANE_SIZE, state.status.wKingC);
+    std::fill_n(obs.begin() + PLANE_SIZE * 2, PLANE_SIZE, state.status.bQueenC);
+    std::fill_n(obs.begin() + PLANE_SIZE * 3, PLANE_SIZE, state.status.wKingC);
 
     // side to move
-    std::fill_n(obs.begin() + sideToMoveOffset, channelSize, state.status.isWhite);
+    std::fill_n(obs.begin() + sideToMoveOffset, PLANE_SIZE, state.status.isWhite);
 
     // 50 move clock
     const int moveClockIndex = state.halfMoveClock;
@@ -436,40 +435,57 @@ std::vector<bool> generateObservation(const GameState& state) {
     // edge finder
     addEdgeFinder(obs, edgeFinderOffset);
 
-    // TODO: still need 2 fold repetition here (zobrist keys)
-    // current board + 2 fold repetition
     const PastGameState curState = PastGameState(state);
-    fillObservationWithBoard(obs, curState, currentBoardOffset, state.status.isWhite);
+
+    // check if board existed before
+    bool is2FoldRep = occursMoreThan(state.positionHashes, state.getPositionHash(), 0);
+    fillObservationWithBoard(obs, curState, currentBoardOffset, state.status.isWhite, is2FoldRep);
 
     // past boards
     for (int i = 0; i < numPastBoards; i++) {
         const bool isWhite = (i % 2 == 0) ? state.status.isWhite : !state.status.isWhite;
-        const PastGameState oldState = state.history[i];
+        const PastGameState oldState = state.stateHistory[i];
         const int startOffset = currentBoardOffset + (boardSize * (i + 1));
-        fillObservationWithBoard(obs, oldState, startOffset, isWhite);
+
+        const uint64_t posHash = oldState.positionHash;
+        bool isRep = occursMoreThan(state.positionHashes, posHash, 1);
+
+        fillObservationWithBoard(obs, oldState, startOffset, isWhite, isRep);
     }
     return obs;
 }
 
-// TODO: this only works for non promotions
 template<bool isWhite>
 uint64_t getMoveIndex(const Move move) {
     const uint64_t sourceSquare = move & 0b111111;
     const uint64_t targetSquare = move >> 6 & 0b111111;
     const uint64_t flags = move >> 12 & 0b1111;
 
-    // this puts the starting location at square 0
-    const uint64_t normalizedTarget = (targetSquare - sourceSquare) + 64;
-
-    // table lookup what move that is
-    uint64_t moveTypeIndex;
-    if constexpr (isWhite) {
-        moveTypeIndex = Lookup::offsetToPlaneWhite[normalizedTarget];
-    } else {
-        moveTypeIndex = Lookup::offsetToPlaneBlack[normalizedTarget];
+    // check for non queen promotion
+    if (flags >= 0b1000 && ((flags & 0b0011) != 0b0011)) {
+        const uint64_t moveOffset = (targetSquare - sourceSquare);
+        const uint64_t promoOffset = flags & 0b0011;
+        uint64_t plane;
+        if constexpr (isWhite) {
+            // we map 7, 8, 9 to 64, 67, 70 and their promotions
+            plane = ((moveOffset - 7) * 3) + 64 + promoOffset;
+        } else {
+            // we map -9, -8, -7 to 64, 67, 70 and their promotions
+            plane = ((moveOffset + 9) * 3) + 64 + promoOffset;
+        }
+        return plane * PLANE_SIZE + sourceSquare;
     }
 
-    return sourceSquare * moveTypeIndex + sourceSquare;
+    // this puts the starting location at square 0
+    const uint64_t normalizedOffset = (targetSquare - sourceSquare) + 64;
+    // table lookup what move that is
+    uint64_t plane;
+    if constexpr (isWhite) {
+        plane = Lookup::offsetToPlaneWhite[normalizedOffset];
+    } else {
+        plane = Lookup::offsetToPlaneBlack[normalizedOffset];
+    }
+    return plane * PLANE_SIZE + sourceSquare;
 }
 
 template<bool isWhite>
@@ -518,7 +534,6 @@ bool isStaleMate(const GameState& state) {
     return false;
 }
 
-// TODO: still need to reset this clock correctly
 bool isDrawBy50Moves(const GameState& state) {
     if (state.halfMoveClock >= 100) {
         return true;
@@ -526,9 +541,10 @@ bool isDrawBy50Moves(const GameState& state) {
     return false;
 }
 
-// TODO: yea this will be zobrest keys I fear
+template<bool isWhite>
 bool isDrawBy3FoldRepetition(const GameState& state) {
-    return false;
+    const uint64_t posHash = state.getPositionHash();
+    return occursMoreThan(state.positionHashes, posHash, 2);
 }
 
 template<bool isWhite>
@@ -541,7 +557,7 @@ TerminationInfo checkForTermination(const GameState& state) {
         }
     }
 
-    if (isStaleMate<isWhite>(state) || isDrawBy50Moves(state) || isDrawBy3FoldRepetition(state)) {
+    if (isStaleMate<isWhite>(state) || isDrawBy50Moves(state) || isDrawBy3FoldRepetition<isWhite>(state)) {
         return TerminationInfo {
             0, 0, true
         };

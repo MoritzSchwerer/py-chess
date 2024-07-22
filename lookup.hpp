@@ -308,26 +308,24 @@ constexpr std::array<int8_t, 73> planeToOffsetBlack = {
 std::array<uint8_t, 128> generateOffsetToPlaneWhite() {
     std::array<uint8_t, 128> inverted;
     // we do + 64 to ensure that we don't occur negative values
-    for (int i = 0; i < 73; i++) {
+    for (int i = 0; i < 64; i++) {
         const uint8_t element = planeToOffsetWhite[i] + 64;
         inverted[element] = i;
     }
     return inverted;
 }
 
-// TODO: this will overwrite with the pawn promotions need to fix that
 std::array<uint8_t, 128> offsetToPlaneWhite = generateOffsetToPlaneWhite();
 
 std::array<uint8_t, 128> generateOffsetToPlaneBlack() {
     std::array<uint8_t, 128> inverted;
     // we do + 64 to ensure that we don't occur negative values
-    for (int i = 0; i < 73; i++) {
+    for (int i = 0; i < 64; i++) {
         const uint8_t element = planeToOffsetBlack[i] + 64;
         inverted[element] = i;
     }
     return inverted;
 }
-// TODO: this will overwrite with the pawn promotions need to fix that
 std::array<uint8_t, 128> offsetToPlaneBlack = generateOffsetToPlaneBlack();
 
 PieceType getPromotion(uint8_t plane) {

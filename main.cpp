@@ -1,24 +1,34 @@
-#include <array>
 #include <vector>
+#include <iostream>
 
 #include "src/game_env.hpp"
 
-// TODO: do testing with random legal actions
-int main() {
+uint64_t firstLegalAction(const std::vector<bool>& actions) {
+    for (int i = 0; i < actions.size(); i++) {
+        if (actions[i]) return i; 
+    }
+    return actions.size();
+}
+
+int testFirstLegalAction() {
     ChessGameEnv game;
-    game.observe();
-    game.step(8*numActionPlanes + 1);
-    game.observe();
-    game.step(63*numActionPlanes + 29);
-    game.observe();
-    game.step(24*numActionPlanes + 0);
-    game.observe();
-    game.step(49*numActionPlanes + 29);
-    game.observe();
-    game.step(32*numActionPlanes + 7);
-    ChessObservation obs = game.observe();
-    std::cout << obs.whiteReward << std::endl;
-    std::cout << obs.blackReward << std::endl;
-    std::cout << obs.isTerminated << std::endl;
+    while (true) {
+        const ChessObservation obs = game.observe();
+        const uint64_t action = firstLegalAction(obs.actionMask);
+        if (action == obs.actionMask.size()) {
+            break;
+        }
+        game.step(action);
+
+    }
+    return 0;
+}
+
+int main() {
+    if (testFirstLegalAction() == 0) {
+        std::cout << "success" << std::endl;
+    } else {
+        std::cout << "failed" << std::endl;
+    }
     return 0;
 }

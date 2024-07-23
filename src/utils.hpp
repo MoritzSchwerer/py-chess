@@ -1,5 +1,7 @@
 #pragma once
+
 #include "types.hpp"
+#include "game_state.hpp"
 
 int fenPosToIndex(const std::string& notation) {
   char letter = notation[0];

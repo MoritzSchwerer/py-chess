@@ -4,6 +4,7 @@
 
 #include "types.hpp"
 #include "constants.hpp"
+#include "game_state.hpp"
 #include "lookup.hpp"
 #include "moves.hpp"
 #include "utils.hpp"
@@ -136,28 +137,30 @@ Bitboard getPinMaskHV(GameState state) {
         // note that here we add the king to it's own attack
         // to includ it in the combined attacks below
         const Bitboard kingAttacks = Lookup::perSquareXrayRookAttacks[kingSquare][kingBlockIdx] | kingBoard;
-        pinMask |= rookAttacks & kingAttacks;
+        Bitboard tempPinMask = 0ull;
+        tempPinMask |= rookAttacks & kingAttacks;
 
         // now do the following checks
         // 1. king must be attacked by rook
         const Bitboard kingOnMask = broadcastSingleToMask(kingBoard & rookAttacks);
         // 2. no enemy can block the rook
-        const Bitboard enemyOnMask = broadcastSingleToMask(pinMask & enemies);
+        const Bitboard enemyOnMask = broadcastSingleToMask(tempPinMask & enemies);
 
         // 3. remove king and add attacking piece
-        pinMask &= ~kingBoard;
-        pinMask |= sourceBoard;
+        tempPinMask &= ~kingBoard;
+        tempPinMask |= sourceBoard;
 
         // 4. zero out mask if king is not on the mask
         // or there is an enemy on the mask
-        pinMask &= kingOnMask;
-        pinMask &= ~enemyOnMask;
+        tempPinMask &= kingOnMask;
+        tempPinMask &= ~enemyOnMask;
 
         // 5. if we overlap with the checkmask clear pin mask
         const Bitboard checkExists = broadcastSingleToMask(~checkMask);
         const Bitboard checkMaskConverted = checkMask & checkExists;
-        const Bitboard overlap = broadcastSingleToMask(pinMask & checkMaskConverted);
-        pinMask &= ~overlap;
+        const Bitboard overlap = broadcastSingleToMask(tempPinMask & checkMaskConverted);
+        tempPinMask &= ~overlap;
+        pinMask |= tempPinMask;
 
 
     }
@@ -189,29 +192,31 @@ Bitboard getPinMaskDG(GameState state) {
         // note that here we add the king to it's own attack
         // to includ it in the combined attacks below
         const Bitboard kingAttacks = Lookup::perSquareXrayBishopAttacks[kingSquare][kingBlockIdx] | kingBoard;
-        pinMask |= bishopAttacks & kingAttacks;
+        Bitboard tempPinMask = 0ull;
+        tempPinMask |= bishopAttacks & kingAttacks;
 
         // now do the following checks
         // 1. king must be attacked by bishop
         const Bitboard kingOnMask = broadcastSingleToMask(kingBoard & bishopAttacks);
         // 2. no enemy can block the bishop
-        const Bitboard enemyOnMask = broadcastSingleToMask(pinMask & enemies);
+        const Bitboard enemyOnMask = broadcastSingleToMask(tempPinMask & enemies);
 
         // 3. remove king and add attacking piece
-        pinMask &= ~kingBoard;
-        pinMask |= sourceBoard;
+        tempPinMask &= ~kingBoard;
+        tempPinMask |= sourceBoard;
 
         // 4. zero out mask if king is not on the mask
         // or there is an enemy on the mask
-        pinMask &= kingOnMask;
-        pinMask &= ~enemyOnMask;
+        tempPinMask &= kingOnMask;
+        tempPinMask &= ~enemyOnMask;
 
         // 5. if we overlap with the checkmask clear pin mask
         const Bitboard checkExists = broadcastSingleToMask(~checkMask);
         const Bitboard checkMaskConverted = checkMask & checkExists;
-        const Bitboard overlap = broadcastSingleToMask(pinMask & checkMaskConverted);
-        pinMask &= ~overlap;
+        const Bitboard overlap = broadcastSingleToMask(tempPinMask & checkMaskConverted);
+        tempPinMask &= ~overlap;
 
+        pinMask |= tempPinMask;
 
     }
     return pinMask;
@@ -235,12 +240,12 @@ void getLegalPawnMoves(const GameState &state, Bitboard checkMask, Bitboard pinM
         targetSquares |= pawnPush1<isWhite>(pawnPush1<isWhite>(sourceBoard & secondRank<isWhite>()) & ~enemyOrFriendly) & ~enemyOrFriendly;
 
         // this handles HV pinns
-        const Bitboard isPinnedHV = broadcastSingleToMask(sourceSquare & pinMaskHV);
+        const Bitboard isPinnedHV = broadcastSingleToMask(sourceBoard & pinMaskHV);
         const Bitboard onPinHVMask = ~isPinnedHV | pinMaskHV;
         targetSquares &= onPinHVMask;
 
         // this handles DG pinns
-        const Bitboard isPinnedDG = broadcastSingleToMask(sourceSquare & pinMaskDG);
+        const Bitboard isPinnedDG = broadcastSingleToMask(sourceBoard & pinMaskDG);
         const Bitboard onPinDGMask = ~isPinnedDG | pinMaskDG;
         targetSquares &= onPinDGMask;
 
@@ -267,12 +272,12 @@ void getLegalPawnMoves(const GameState &state, Bitboard checkMask, Bitboard pinM
         targetSquares |= pawnPush1<isWhite>(sourceBoard) & ~enemyOrFriendly;
 
         // this handles HV pinns
-        const Bitboard isPinnedHV = broadcastSingleToMask(sourceSquare & pinMaskHV);
+        const Bitboard isPinnedHV = broadcastSingleToMask(sourceBoard & pinMaskHV);
         const Bitboard onPinHVMask = ~isPinnedHV | pinMaskHV;
         targetSquares &= onPinHVMask;
 
         // this handles DG pinns
-        const Bitboard isPinnedDG = broadcastSingleToMask(sourceSquare & pinMaskDG);
+        const Bitboard isPinnedDG = broadcastSingleToMask(sourceBoard & pinMaskDG);
         const Bitboard onPinDGMask = ~isPinnedDG | pinMaskDG;
         targetSquares &= onPinDGMask;
 
@@ -509,31 +514,38 @@ void getLegalKingMoves(const GameState &state, Bitboard enemySeenSquares, Moves 
     }
 }
 template<GameStatus status>
-void getLegalCastleMoves(const GameState &state, Bitboard seenSquares, Moves &moves) {
+void getLegalCastleMoves(const GameState &state, Bitboard seenSquares, Bitboard checkMask, Moves &moves) {
     const Bitboard enemies = getEnemyPieces<status.isWhite>(state);
     const Bitboard friendlies = getFriendlyPieces<status.isWhite>(state);
-    if constexpr (status.isWhite && status.wKingC) {
-        const Bitboard relevantSquares = 0b01110000;
-        if (!(relevantSquares & seenSquares | relevantSquares & friendlies | relevantSquares & enemies)) {
-            moves.push_back(create_move(4ull, 7ull, 0b0010));
-        }
-    } 
+    if (SquareOf(~checkMask) < 64) {
+        return;
+    }
     if constexpr (status.isWhite && status.wQueenC) {
-        const Bitboard relevantSquares = 0b00001110;
-        if (!(relevantSquares & seenSquares | relevantSquares & friendlies | relevantSquares & enemies)) {
+        const Bitboard relevantPieceSquares = 0b00001110;
+        const Bitboard relevantSeenSquares = 0b00001100;
+        if (!(relevantSeenSquares & seenSquares | relevantPieceSquares & friendlies | relevantPieceSquares & enemies)) {
             moves.push_back(create_move(4ull, 0ull, 0b0011));
         }
     } 
-    if constexpr (!status.isWhite && status.bKingC) {
-        const Bitboard relevantSquares = 0x01110000ull << 56;
-        if (!(relevantSquares & seenSquares | relevantSquares & friendlies | relevantSquares & enemies)) {
-            moves.push_back(create_move(60ull, 63ull, 0b0010));
+    if constexpr (status.isWhite && status.wKingC) {
+        const Bitboard relevantPieceSquares = 0b01100000;
+        const Bitboard relevantSeenSquares = 0b01100000;
+        if (!(relevantSeenSquares & seenSquares | relevantPieceSquares & friendlies | relevantPieceSquares & enemies)) {
+            moves.push_back(create_move(4ull, 7ull, 0b0010));
+        }
+    } 
+    if constexpr (!status.isWhite && status.bQueenC) {
+        const Bitboard relevantPieceSquares = 0b00001110ull << 56;
+        const Bitboard relevantSeenSquares = 0b00001100ull << 56;
+        if (!(relevantSeenSquares & seenSquares | relevantPieceSquares & friendlies | relevantPieceSquares & enemies)) {
+            moves.push_back(create_move(60ull, 56ull, 0b0011));
         }
     }
-    if constexpr (!status.isWhite && status.bQueenC) {
-        const Bitboard relevantSquares = 0x00001110ull << 56;
-        if (!(relevantSquares & seenSquares | relevantSquares & friendlies | relevantSquares & enemies)) {
-            moves.push_back(create_move(60ull, 56ull, 0b0011));
+    if constexpr (!status.isWhite && status.bKingC) {
+        const Bitboard relevantPieceSquares = 0b01100000ull << 56;
+        const Bitboard relevantSeenSquares = 0b01100000ull << 56;
+        if (!(relevantSeenSquares & seenSquares | relevantPieceSquares & friendlies | relevantPieceSquares & enemies)) {
+            moves.push_back(create_move(60ull, 63ull, 0b0010));
         }
     }
 }
@@ -561,6 +573,27 @@ Bitboard getEnemyBishopSeenSquaresAfterEnpassant(const GameState &state, uint64_
 }
 
 template<bool isWhite>
+Bitboard getEnemyRookSeenSquaresAfterEnpassant(const GameState &state, uint64_t attackingPawnSquare) {
+    const Bitboard enemies = getEnemyPieces<isWhite>(state);
+    const Bitboard friendlies = getFriendlyPieces<isWhite>(state);
+    const Bitboard enpassantSquare = state.enpassant_board;
+    const Bitboard pawnSquare = pawnPush1<!isWhite>(enpassantSquare);
+
+    const Bitboard blockingPieces = (enemies | friendlies | enpassantSquare) & ~pawnSquare & ~(1ull << attackingPawnSquare);
+
+    Bitboard rooks = getRooks<!isWhite>(state) | getQueens<!isWhite>(state);
+    Bitboard seenSquares = 0ull;
+    Bitloop(rooks) {
+        const uint64_t sourceSquare = SquareOf(rooks);
+        const Bitboard relevantMask = Lookup::rookAttacks[sourceSquare];
+        const uint64_t blockIdx = _pext_u64(blockingPieces, relevantMask);
+        const Bitboard targetsBoard = Lookup::perSquareRookAttacks[sourceSquare][blockIdx];
+        seenSquares |= targetsBoard;
+    }
+    return seenSquares;
+}
+
+template<bool isWhite>
 void getLegalEnpassantCaptures(const GameState &state, Moves &moves) {
     const Bitboard king = getKing<isWhite>(state);
     const Bitboard enemyEnpassant = state.enpassant_board;
@@ -571,7 +604,9 @@ void getLegalEnpassantCaptures(const GameState &state, Moves &moves) {
     Bitboard attackingPawns = attackingSquares & pawns;
     Bitloop (attackingPawns) {
         const uint64_t sourceSquare = SquareOf(attackingPawns);
-        const Bitboard seenSquares = getEnemyBishopSeenSquaresAfterEnpassant<isWhite>(state, sourceSquare);
+        const Bitboard bishopSeenSquares = getEnemyBishopSeenSquaresAfterEnpassant<isWhite>(state, sourceSquare);
+        const Bitboard rookSeenSquares = getEnemyRookSeenSquaresAfterEnpassant<isWhite>(state, sourceSquare);
+        const Bitboard seenSquares = bishopSeenSquares | rookSeenSquares;
         if (!(seenSquares & king)) {
             moves.push_back(create_move(sourceSquare, SquareOf(enemyEnpassant), 0b0101));
         }
@@ -593,7 +628,7 @@ Moves getLegalMovesTemplate(const GameState &state) {
     getLegalQueenMoves<status.isWhite>(state, checkMask, pinMaskHV, pinMaskDG, moves);
     getLegalKingMoves<status.isWhite>(state, enemySeenSquares, moves);
     if constexpr (status.wKingC || status.wQueenC || status.bKingC || status.bQueenC) {
-        getLegalCastleMoves<status>(state, enemySeenSquares, moves);
+        getLegalCastleMoves<status>(state, enemySeenSquares, checkMask, moves);
     }
     if constexpr (status.enpassant) {
         getLegalEnpassantCaptures<status.isWhite>(state, moves);

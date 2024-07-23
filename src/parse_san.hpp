@@ -44,25 +44,30 @@ uint64_t sanToSquare(std::string squareSAN) {
 
 template<bool isWhite>
 Moves getLegalMovesPerPiece(const GameState &state, const std::string pieceType) {
+    const Bitboard checkMask = Movegen::getCheckMask<isWhite>(state);
+    const Bitboard pinMaskHV = Movegen::getPinMaskHV<isWhite>(state);
+    const Bitboard pinMaskDG = Movegen::getPinMaskDG<isWhite>(state);
+    const Bitboard enemySeenSquares = Movegen::getSeenSquares<!isWhite>(state);
     Moves moves;
     switch(pieceType[0]) {
         case 'R': 
-            getLegalRookMoves<isWhite>(state, moves);
+            Movegen::getLegalRookMoves<isWhite>(state, checkMask, pinMaskHV, pinMaskDG, moves);
             break;
         case 'N': 
-            getLegalKnightMoves<isWhite>(state, moves);
+            Movegen::getLegalKnightMoves<isWhite>(state, checkMask, pinMaskHV, pinMaskDG, moves);
             break;
         case 'B': 
-            getLegalBishopMoves<isWhite>(state, moves);
+            Movegen::getLegalBishopMoves<isWhite>(state, checkMask, pinMaskHV, pinMaskDG, moves);
             break;
         case 'Q': 
-            getLegalQueenMoves<isWhite>(state, moves);
+            Movegen::getLegalQueenMoves<isWhite>(state, checkMask, pinMaskHV, pinMaskDG, moves);
             break;
         case 'K': 
-            getLegalKingMoves<isWhite>(state, moves);
+            Movegen::getLegalKingMoves<isWhite>(state, enemySeenSquares, moves);
             break;
         default: 
-            getLegalPawnMoves<isWhite>(state, moves);
+            Movegen::getLegalPawnMoves<isWhite>(state, checkMask, pinMaskHV, pinMaskDG, moves);
+            if (state.status.enpassant) Movegen::getLegalEnpassantCaptures<isWhite>(state, moves);
             break;
     }
     return moves;

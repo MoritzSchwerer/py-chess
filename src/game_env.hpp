@@ -10,15 +10,14 @@
 #include "types.hpp"
 #include "move_gen.hpp"
 #include "utils.hpp"
-#include "parse_san.hpp"
 #include "lookup.hpp"
 #include "game_state.hpp"
-// #include "zobrist.hpp"
 
-constexpr int observationSpaceSize = 7104;
-constexpr int actionSpaceSize = 4672; 
-constexpr int numActionPlanes = 73;
+constexpr int OBSERVATION_SPACE_SIZE = 7104;
+constexpr int ACTION_SPACE_SIZE = 4672; 
+constexpr int NUM_ACTION_PLANES = 73;
 constexpr int PLANE_SIZE = 64;
+constexpr int MAX_GAME_LENGTH = 500;
 
 struct TerminationInfo {
     int32_t whiteReward;
@@ -60,6 +59,8 @@ public:
 
     ChessGameEnv() {}
     ChessGameEnv(const std::string &fen) : state(parseFen(fen)) {}
+    ChessGameEnv(const ChessGameEnv& other) : state(other.state) {}
+
 
     Moves getPossibleMoves() const { return Movegen::getLegalMoves(state); }
 
@@ -88,7 +89,6 @@ PieceType getPieceType(const GameState& state, uint8_t square) {
     return PieceType::None;
 }
 
-// this will throw if we can't find a match
 template<bool isWhite>
 Bitboard& getBitboardFromSquare(GameState& state, Bitboard board) {
     if constexpr (isWhite) {
@@ -234,6 +234,7 @@ bool updateGameState(GameState& state, uint8_t sourceSquare, uint8_t targetSquar
 
     updateCastlingRights<isWhite>(state, sourceBoard, type);
 
+    // NOTE: fails here
     // remove piece from source position
     Bitboard& pieceBoard = getBitboardFromSquare<isWhite>(state, sourceBoard);
     pieceBoard &= ~sourceBoard;
@@ -278,17 +279,31 @@ void updateMoveCount(GameState& state, bool reset) {
 }
 
 template<bool isWhite>
-uint8_t getOffsetFromPlane(uint8_t plane) {
+int8_t getOffsetFromPlane(uint8_t plane) {
     if constexpr (isWhite) return Lookup::planeToOffsetWhite[plane];
     else return Lookup::planeToOffsetWhite[plane];
 }
 
 template<bool isWhite>
 void makeMove(GameState& state, Action action) {
-    const uint8_t sourceSquare = action / numActionPlanes;
-    const uint8_t plane = action % numActionPlanes;
-    const int8_t offset = getOffsetFromPlane<isWhite>(plane);
-    const uint8_t targetSquare = sourceSquare + offset;
+    const int sourceSquare = action / NUM_ACTION_PLANES;
+    const int plane = action % NUM_ACTION_PLANES;
+    const int offset = getOffsetFromPlane<isWhite>(plane);
+    const int targetSquare = sourceSquare + offset;
+
+    // if (isWhite) {
+    //     std::cout << "White" << std::endl;
+    // } else {
+    //     std::cout << "Black" << std::endl;
+    // }
+    //
+    // printMove(action);
+    // std::cout << "action: " << action << std::endl;
+    // std::cout << "source: " << sourceSquare << std::endl;
+    // std::cout << "plane: " << plane << std::endl;
+    // std::cout << "offset: " << offset << std::endl;
+    // std::cout << "target: " << targetSquare << std::endl;
+
 
     const PieceType promotion = Lookup::getPromotion(plane);
 
@@ -417,7 +432,7 @@ std::vector<bool> generateObservation(const GameState& state) {
     constexpr int boardSize = PLANE_SIZE * 13;
     constexpr int numPastBoards = 7;
 
-    std::vector<bool> obs(observationSpaceSize);
+    std::vector<bool> obs(OBSERVATION_SPACE_SIZE);
 
     // castling
     std::fill_n(obs.begin() + PLANE_SIZE * 0, PLANE_SIZE, state.status.wQueenC);
@@ -458,8 +473,8 @@ std::vector<bool> generateObservation(const GameState& state) {
 template<bool isWhite>
 uint64_t getMoveIndex(const Move move) {
     const uint64_t sourceSquare = move & 0b111111;
-    const uint64_t targetSquare = move >> 6 & 0b111111;
-    const uint64_t flags = move >> 12 & 0b1111;
+    const uint64_t targetSquare = (move >> 6) & 0b111111;
+    const uint64_t flags = (move >> 12) & 0b1111;
 
     // check for non queen promotion
     if (flags >= 0b1000 && ((flags & 0b0011) != 0b0011)) {
@@ -473,11 +488,12 @@ uint64_t getMoveIndex(const Move move) {
             // we map -9, -8, -7 to 64, 67, 70 and their promotions
             plane = ((moveOffset + 9) * 3) + 64 + promoOffset;
         }
-        return plane * PLANE_SIZE + sourceSquare;
+        return plane + NUM_ACTION_PLANES * sourceSquare;
     }
 
     // this puts the starting location at square 0
     const uint64_t normalizedOffset = (targetSquare - sourceSquare) + 64;
+
     // table lookup what move that is
     uint64_t plane;
     if constexpr (isWhite) {
@@ -485,13 +501,14 @@ uint64_t getMoveIndex(const Move move) {
     } else {
         plane = Lookup::offsetToPlaneBlack[normalizedOffset];
     }
-    return plane * PLANE_SIZE + sourceSquare;
+    uint64_t temp = plane + NUM_ACTION_PLANES * sourceSquare;
+    return temp;
 }
 
 template<bool isWhite>
 std::vector<bool> generateLegalActionMask(const GameState& state) {
     Moves moves = Movegen::getLegalMoves(state);
-    std::vector<bool> legalActionMask(actionSpaceSize);
+    std::vector<bool> legalActionMask(ACTION_SPACE_SIZE);
     for (const Move& move : moves) {
         const uint64_t moveIndex = getMoveIndex<isWhite>(move);
         legalActionMask[moveIndex] = true;
@@ -562,6 +579,12 @@ TerminationInfo checkForTermination(const GameState& state) {
             0, 0, true
         };
 
+    }
+
+    if (state.fullMoveCount == (MAX_GAME_LENGTH+1)) {
+        return TerminationInfo {
+            0, 0, true
+        };
     }
     return TerminationInfo {
         0, 0, false

@@ -3,8 +3,7 @@
 #include <vector>
 #include <deque>
 
-#include "game_status.hpp"
-
+// TODO: remove action for Move
 using Bitboard = uint64_t;
 using Move = uint16_t;
 using Moves = std::vector<Move>;

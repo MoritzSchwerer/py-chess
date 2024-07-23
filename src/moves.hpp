@@ -5,8 +5,8 @@
 #include <immintrin.h>
 
 #include "types.hpp"
-#include "game_state.hpp"
 #include "constants.hpp"
+#include "game_state.hpp"
 
 // #define SquareOf(X) _tzcnt_u64(X)
 #define Bitloop(X) for(;X; X = _blsr_u64(X))

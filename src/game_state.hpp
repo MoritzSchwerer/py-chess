@@ -5,6 +5,7 @@
 #include <map>
 
 #include "types.hpp"
+#include "game_status.hpp"
 
 struct GameState;
 

@@ -157,7 +157,7 @@ uint64_t hashEnpassant(const GameState& state) {
         // if current color is white the pawn is black
         // so we add 8 to destinguish between white and black
         if constexpr (isWhite) enpassantIndex += 8;
-        return rand64(enpassantIndex);
+        return rand64(enpassantOffset + enpassantIndex);
     }
     return 0ull;
 }

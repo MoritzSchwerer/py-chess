@@ -1,10 +1,10 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
-#include "game_env.hpp" // assume this is the header file for the ChessGameEnv struct
+#include "src/game_env.hpp" // assume this is the header file for the ChessGameEnv struct
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(chess, m) {
+PYBIND11_MODULE(chess_env, m) {
 
     py::class_<ChessGameEnv> chess_env(m, "ChessGameEnv");
 
@@ -12,6 +12,9 @@ PYBIND11_MODULE(chess, m) {
 
     chess_env.def("step", &ChessGameEnv::step, py::arg("action"));
     chess_env.def("observe", &ChessGameEnv::observe);
+    chess_env.def("copy", [](const ChessGameEnv& env) {
+        return ChessGameEnv(env);
+    });
 
     py::class_<ChessObservation> chess_observation(m, "ChessObservation");
 

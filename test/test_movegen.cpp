@@ -1,16 +1,16 @@
+#define CATCH_CONFIG_MAIN
+#include <catch2/catch.hpp>
 #include <fstream>
 #include <vector>
 #include <string>
-#include <iostream>
-#include <catch2/catch.hpp>
 
 #include "types.hpp"
 #include "json.hpp"
-#include "moves.hpp"
 #include "move_gen.hpp"
 #include "game_state.hpp"
 #include "parse_san.hpp"
 
+namespace {
 
 struct TestCase {
     std::string desc;
@@ -21,7 +21,6 @@ struct TestCase {
     GameState state;
     Moves moves;
 };
-
 using TestCases = std::vector<TestCase>;
 
 TestCases readTestCaseFile(const std::string &f, TestCases &testCases) {
@@ -62,36 +61,39 @@ TestCases parseTestCases() {
     return testCases;
 }
 
-void runTestCase(const TestCase& tc) {
+
+class TestCaseGenerator final : public Catch::Generators::IGenerator<TestCase> {
+    TestCases testCases;
+    int currentIndex;
+public:
+
+    TestCaseGenerator() : testCases(parseTestCases()), currentIndex(0) {}
+
+    TestCase const& get() const override;
+
+    bool next() override {
+        currentIndex++;
+        return currentIndex < testCases.size();
+    }
+};
+
+TestCase const& TestCaseGenerator::get() const {
+    return testCases[currentIndex];
+}
+
+Catch::Generators::GeneratorWrapper<TestCase> loadTestCases() {
+    return Catch::Generators::GeneratorWrapper<TestCase>(
+        std::make_unique<TestCaseGenerator>()
+    );
+}
+
+}
+
+TEST_CASE("Move generation tests") {
+    TestCase tc = GENERATE(loadTestCases());
+
     GameState state = parseFen(tc.fen);
     Moves genLegalMoves = Movegen::getLegalMoves(state);
-
-    Moves actLegalMoves = tc.moves;
-
-
-    if (genLegalMoves.size() != actLegalMoves.size()) {
-        std::cout << "=================================" << std::endl;
-        std::cout << tc.fen << std::endl;
-        std::cout << "Generated legal moves: " << genLegalMoves.size() << std::endl;
-        std::cout << "Actually  legal moves: " << actLegalMoves.size() << std::endl;
-        Bitboard mask = 0ull;
-        if (state.status.isWhite) mask = Movegen::getSeenSquares<false>(state);
-        else mask = Movegen::getSeenSquares<true>(state);
-        std::cout << (state.status.isWhite ? "White" : "Black") << std::endl;
-        printBoard(state, mask);
-        std::cout << "Castle white: " << state.status.wQueenC << " " << state.status.wKingC << std::endl;
-        std::cout << "Castle black: " << state.status.bQueenC << " " << state.status.bKingC << std::endl;
-        std::cout << "My moves: " << std::endl;
-        for (const Move& m : genLegalMoves) {
-            printMove(m);
-        }
-        std::cout << "" << std::endl;
-        std::cout << "Actual moves: " << std::endl;
-        for (const Move& m : actLegalMoves) {
-            printMove(m);
-        }
-        // for (const std::string& san : tc.sans) {
-        //     std::cout << san << std::endl;
-        // }
-    }
+    REQUIRE(genLegalMoves.size() == tc.moves.size());
 }
+

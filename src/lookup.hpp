@@ -295,38 +295,82 @@ std::array<std::array<Bitboard, rookAttackMaskSize>, 64> perSquareXrayRookAttack
 
 
 constexpr std::array<int8_t, 73> planeToOffsetWhite = {
-    /* queen moves */ 8, 16, 24, 32, 40, 48, 56, 9, 18, 27, 36, 45, 54, 63, 1, 2, 3, 4, 5, 6, 7, -7, -14, -21, -28, -35, -42, -49, -8, -16, -24, -32, -40, -48, -56, -9, -18, -27, -36, -45, -54, -63, -1, -2, -3, -4, -5, -6, -7, 7, 14, 21, 28, 35, 42, 49,
-    /* knight moves */ 15, 17, 10, -6, -15, -17, 6, -10,
+    8, 16, 24, 32, 40, 48, 56, 9, 18, 27, 36, 45, 54, 63, 1, 2, 3, 4, 5, 6, 7, -7, -14, -21, -28, -35, -42, -49, -8, -16, -24, -32, -40, -48, -56, -9, -18, -27, -36, -45, -54, -63, -1, -2, -3, -4, -5, -6, -7, 7, 14, 21, 28, 35, 42, 49,
+    15, 17, 10, -6, -15, -17, 6, -10,
+    7, 7, 7, 8, 8, 8, 9, 9, 9
+};
+
+constexpr std::array<int8_t, 73> planeToOffsetBlack = {
+    8, 16, 24, 32, 40, 48, 56, 9, 18, 27, 36, 45, 54, 63, 1, 2, 3, 4, 5, 6, 7, -7, -14, -21, -28, -35, -42, -49, -8, -16, -24, -32, -40, -48, -56, -9, -18, -27, -36, -45, -54, -63, -1, -2, -3, -4, -5, -6, -7, 7, 14, 21, 28, 35, 42, 49,
+    15, 17, 10, -6, -15, -17, 6, -10,
+    -9, -9, -9, -8, -8, -8, -7, -7, -7
+};
+
+
+// constexpr std::array<int8_t, 56> planeToOffsetQueen = {
+//     8, 16, 24, 32, 40, 48, 56, 9, 18, 27, 36, 45, 54, 63, 1, 2, 3, 4, 5, 6, 7, -7, -14, -21, -28, -35, -42, -49, -8, -16, -24, -32, -40, -48, -56, -9, -18, -27, -36, -45, -54, -63, -1, -2, -3, -4, -5, -6, -7, 7, 14, 21, 28, 35, 42, 49,
+// };
+
+constexpr std::array<int8_t, 56> planeToOffsetRook = {
+    8, 16, 24, 32, 40, 48, 56, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 0, 0, 0, 0, 0, 0, 0, -8, -16, -24, -32, -40, -48, -56, 0, 0, 0, 0, 0, 0, 0, -1, -2, -3, -4, -5, -6, -7, 0, 0, 0, 0, 0, 0, 0,
+};
+
+constexpr std::array<int8_t, 56> planeToOffsetBishop = {
+    0, 0, 0, 0, 0, 0, 0, 9, 18, 27, 36, 45, 54, 63, 0, 0, 0, 0, 0, 0, 0, -7, -14, -21, -28, -35, -42, -49, 0, 0, 0, 0, 0, 0, 0, -9, -18, -27, -36, -45, -54, -63, 0, 0, 0, 0, 0, 0, 0, 7, 14, 21, 28, 35, 42, 49,
+};
+
+constexpr std::array<int8_t, 8> planeToOffsetKnight = {
+    15, 17, 10, -6, -15, -17, 6, -10,
+};
+
+constexpr std::array<int8_t, 9> planeToOffsetPawnWhite = {
     /* pawn moves (L, P, R) (N, B, R)*/ 7, 7, 7, 8, 8, 8, 9, 9, 9
 };
-constexpr std::array<int8_t, 73> planeToOffsetBlack = {
-    /* queen moves */ 8, 16, 24, 32, 40, 48, 56, 9, 18, 27, 36, 45, 54, 63, 1, 2, 3, 4, 5, 6, 7, -7, -14, -21, -28, -35, -42, -49, -8, -16, -24, -32, -40, -48, -56, -9, -18, -27, -36, -45, -54, -63, -1, -2, -3, -4, -5, -6, -7, 7, 14, 21, 28, 35, 42, 49,
-    /* knight moves */ 15, 17, 10, -6, -15, -17, 6, -10,
+constexpr std::array<int8_t, 9> planeToOffsetPawnBlack = {
     /* pawn moves (L, P, R) (N, B, R)*/ -9, -9, -9, -8, -8, -8, -7, -7, -7
 };
 
-std::array<uint8_t, 128> generateOffsetToPlaneWhite() {
+std::array<uint8_t, 128> generateOffsetToPlaneRook() {
     std::array<uint8_t, 128> inverted;
     // we do + 64 to ensure that we don't occur negative values
-    for (int i = 0; i < 64; i++) {
-        const uint8_t element = planeToOffsetWhite[i] + 64;
+    for (int i = 0; i < 56; i++) {
+        const int8_t element = planeToOffsetRook[i] + 64;
+        inverted[element] = i;
+    }
+    // for (int i = 0; i < 128; i++) {
+    //     std::cout << i << ": " << static_cast<uint64_t>(inverted[i]) << std::endl;
+    // }
+    return inverted;
+}
+
+std::array<uint8_t, 128> generateOffsetToPlaneBishop() {
+    std::array<uint8_t, 128> inverted;
+    // we do + 64 to ensure that we don't occur negative values
+    for (int i = 0; i < 56; i++) {
+        const int8_t element = planeToOffsetBishop[i] + 64;
+        inverted[element] = i;
+    }
+    // for (int i = 0; i < 128; i++) {
+    //     std::cout << i << ": " << static_cast<uint64_t>(inverted[i]) << std::endl;
+    // }
+    return inverted;
+}
+
+std::array<uint8_t, 36> generateOffsetToPlaneKnight() {
+    std::array<uint8_t, 36> inverted;
+    // we do + 18 to ensure that we don't occur negative values
+    for (int i = 0; i < 8; i++) {
+        const int8_t element = planeToOffsetKnight[i] + 18;
         inverted[element] = i;
     }
     return inverted;
 }
 
-std::array<uint8_t, 128> offsetToPlaneWhite = generateOffsetToPlaneWhite();
-
-std::array<uint8_t, 128> generateOffsetToPlaneBlack() {
-    std::array<uint8_t, 128> inverted;
-    // we do + 64 to ensure that we don't occur negative values
-    for (int i = 0; i < 64; i++) {
-        const uint8_t element = planeToOffsetBlack[i] + 64;
-        inverted[element] = i;
-    }
-    return inverted;
-}
-std::array<uint8_t, 128> offsetToPlaneBlack = generateOffsetToPlaneBlack();
+std::array<uint8_t, 128> offsetToPlaneRook = generateOffsetToPlaneRook();
+std::array<uint8_t, 128> offsetToPlaneBishop = generateOffsetToPlaneBishop();
+std::array<uint8_t, 36> offsetToPlaneKnight = generateOffsetToPlaneKnight();
+// for white do -7 to get to [0, 3] and for black +9
+// std::array<uint8_t, 3> offsetToPlanePawn = {7, 8, 9}
 
 PieceType getPromotion(uint8_t plane) {
     if (plane < 64) return PieceType::Queen;
@@ -336,6 +380,26 @@ PieceType getPromotion(uint8_t plane) {
         case 2: return PieceType::Rook;
         default: return PieceType::None;
     }
+}
+
+template<bool isWhite>
+int8_t getOffsetFromPlane(uint8_t plane) {
+    if constexpr (isWhite) return planeToOffsetWhite[plane];
+    else return planeToOffsetBlack[plane];
+}
+
+// offset + 64 to make it non negative
+int8_t getPlaneRook(int8_t offset) {
+    return offsetToPlaneRook[offset + 64];
+}
+
+int8_t getPlaneBishop(int8_t offset) {
+    return offsetToPlaneBishop[offset + 64];
+}
+
+// 56 here since the queen moves are the first 56 and after
+int8_t getPlaneKnight(int8_t offset) {
+    return 56 + offsetToPlaneKnight[offset + 18];
 }
 
 }

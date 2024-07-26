@@ -64,7 +64,7 @@ public:
 
     Moves getPossibleMoves() const { return Movegen::getLegalMoves(state); }
 
-    void step(const Action action);
+    void step(const Move move);
     ChessObservation observe();
 };
 
@@ -131,7 +131,7 @@ Bitboard& getBitboardFromPieceType(GameState& state, PieceType type) {
 
 // returns if we actually removed a piece
 template<bool isWhite>
-bool removeEnemyPiece(GameState& state, Bitboard targetBoard) {
+void removeEnemyPiece(GameState& state, Bitboard targetBoard) {
     if constexpr (isWhite) {
         state.b_pawn &= ~targetBoard;
         state.b_knight &= ~targetBoard;
@@ -139,7 +139,6 @@ bool removeEnemyPiece(GameState& state, Bitboard targetBoard) {
         state.b_rook &= ~targetBoard;
         state.b_queen &= ~targetBoard;
         state.b_king &= ~targetBoard;
-        return (state.b_pawn & targetBoard) | (state.b_knight & targetBoard) | (state.b_bishop & targetBoard) | (state.b_rook & targetBoard) | (state.b_queen & targetBoard) | (state.b_king & targetBoard);
     } else {
         state.w_pawn &= ~targetBoard;
         state.w_knight &= ~targetBoard;
@@ -147,7 +146,6 @@ bool removeEnemyPiece(GameState& state, Bitboard targetBoard) {
         state.w_rook &= ~targetBoard;
         state.w_queen &= ~targetBoard;
         state.w_king &= ~targetBoard;
-        return (state.w_pawn & targetBoard) | (state.w_knight & targetBoard) | (state.w_bishop & targetBoard) | (state.w_rook & targetBoard) | (state.w_queen & targetBoard) | (state.w_king & targetBoard);
     }
 }
 
@@ -186,6 +184,7 @@ void handleCastling(GameState& state, uint8_t sourceSquare, uint8_t targetSquare
         }
     }
     state.status.removeCastlingRights<isWhite>();
+    state.positionHashes.clear();
 }
 
 template<bool isWhite>
@@ -197,13 +196,17 @@ void updateCastlingRights(GameState& state, Bitboard sourceBoard, PieceType type
 
     // update castling right rook moves
     if (type == PieceType::Rook) {
-        if (sourceBoard & initialRookLeft<isWhite>() ) state.status.removeCastlingRightsLeft<isWhite>();
-        if (sourceBoard & initialRookRight<isWhite>()) state.status.removeCastlingRightsRight<isWhite>();
+        if (sourceBoard & initialRookLeft<isWhite>() ) {
+            state.status.removeCastlingRightsLeft<isWhite>();
+        }
+        if (sourceBoard & initialRookRight<isWhite>()) {
+            state.status.removeCastlingRightsRight<isWhite>();
+        }
     }
 }
 
 template<bool isWhite>
-void handlePromotion(GameState& state, Bitboard& pieceBoard, Bitboard targetBoard, PieceType promotion, PieceType type) {
+void moveToTargetPosition(GameState& state, Bitboard& pieceBoard, Bitboard targetBoard, PieceType promotion, PieceType type) {
     if (type == PieceType::Pawn && targetBoard & lastRank<isWhite>()) {
         Bitboard& promotionBoard = getBitboardFromPieceType<isWhite>(state, promotion);
         promotionBoard |= targetBoard;
@@ -218,45 +221,60 @@ void handleEnpassantCapture(GameState& state, Bitboard targetBoard) {
 }
 
 template<bool isWhite>
-bool updateGameState(GameState& state, uint8_t sourceSquare, uint8_t targetSquare, PieceType promotion) {
-    const GameStatus& status = state.status;
+ActionInfo parseAction(Action action) {
+    const uint16_t sourceSquare = action / NUM_ACTION_PLANES;
+    const uint16_t plane = action % NUM_ACTION_PLANES;
+    const  int16_t offset = Lookup::getOffsetFromPlane<isWhite>(plane);
+    const uint16_t targetSquare = sourceSquare + offset;
+    const PieceType promotion = Lookup::getPromotion(plane);
+    return ActionInfo{
+        sourceSquare,
+        targetSquare,
+        promotion,
+    };
+}
+
+template<bool isWhite>
+void updateGameState(GameState& state, ActionInfo ai) {
+    const uint16_t sourceSquare = ai.sourceSquare;
+    const uint16_t targetSquare = ai.targetSquare;
+    const PieceType promotion = ai.promotion;
+
     const Bitboard sourceBoard = 1ull << sourceSquare;
     const Bitboard targetBoard = 1ull << targetSquare;
-
+    const GameStatus& status = state.status;
     const PieceType type = getPieceType<isWhite>(state, sourceSquare);
+
+    // need to do this to ensure the reset of the enpassant
     const bool isEnpassantPossible = state.status.enpassant;
+    const Bitboard enpassantBoard = state.enpassant_board;
     state.clearEnpassant();
 
     if (isCastle<isWhite>(sourceSquare, targetSquare)) {
         handleCastling<isWhite>(state, sourceSquare, targetSquare);
-        return false;
+        return;
     }
 
     updateCastlingRights<isWhite>(state, sourceBoard, type);
 
-    // NOTE: fails here
-    // remove piece from source position
     Bitboard& pieceBoard = getBitboardFromSquare<isWhite>(state, sourceBoard);
     pieceBoard &= ~sourceBoard;
 
-    // handle promotion
-    handlePromotion<isWhite>(state, pieceBoard, targetBoard, promotion, type);
+    // handle move
+    moveToTargetPosition<isWhite>(state, pieceBoard, targetBoard, promotion, type);
 
     // handle enpassant take
-    if (type == PieceType::Pawn && isEnpassantPossible && targetBoard & state.enpassant_board) {
+    if (type == PieceType::Pawn && isEnpassantPossible && targetBoard & enpassantBoard) {
         handleEnpassantCapture<isWhite>(state, targetBoard);
-        return true;
+        return;
     }
 
     // handle enable enpassant
     if (enablesEnpassant<isWhite>(state, sourceBoard, targetBoard, type)) {
         state.setEnpassant(pawnPush1<isWhite>(sourceBoard));
-        return true;
+        return;
     }
-
-
-    const bool tookEnemyPiece = removeEnemyPiece<isWhite>(state, targetBoard);
-    return tookEnemyPiece || type == PieceType::Pawn;
+    removeEnemyPiece<isWhite>(state, targetBoard);
 }
 
 template<bool isWhite>
@@ -271,54 +289,41 @@ bool enablesEnpassant(GameState& state, Bitboard sourceBoard, Bitboard targetBoa
 }
 
 template<bool isWhite>
-void updateMoveCount(GameState& state, bool reset) {
-    if (reset) state.halfMoveClock = 0;
-    else state.halfMoveClock++;
+void updateMoveCount(GameState& state, ActionInfo ai) {
+    const uint16_t sourceSquare = ai.sourceSquare;
+    const uint16_t targetSquare = ai.targetSquare;
+
+    const bool isPawnMove = getPawns<isWhite>(state) & (1ull << sourceSquare);
+    const bool isCapture = isEnemyPiece<isWhite>(state, targetSquare);
+
+    if (isPawnMove || isCapture) {
+        state.halfMoveClock = 0;
+        // this can be better since moves that loose the right
+        // to castle are also irreversible
+        state.positionHashes.clear();
+    } else {
+        state.halfMoveClock++;
+    }
+
 
     if constexpr (!isWhite) state.fullMoveCount++;
 }
 
 template<bool isWhite>
-int8_t getOffsetFromPlane(uint8_t plane) {
-    if constexpr (isWhite) return Lookup::planeToOffsetWhite[plane];
-    else return Lookup::planeToOffsetWhite[plane];
-}
-
-template<bool isWhite>
 void makeMove(GameState& state, Action action) {
-    const int sourceSquare = action / NUM_ACTION_PLANES;
-    const int plane = action % NUM_ACTION_PLANES;
-    const int offset = getOffsetFromPlane<isWhite>(plane);
-    const int targetSquare = sourceSquare + offset;
+    ActionInfo actionInfo = parseAction<isWhite>(action);
 
-    // if (isWhite) {
-    //     std::cout << "White" << std::endl;
-    // } else {
-    //     std::cout << "Black" << std::endl;
-    // }
-    //
-    // printMove(action);
-    // std::cout << "action: " << action << std::endl;
-    // std::cout << "source: " << sourceSquare << std::endl;
-    // std::cout << "plane: " << plane << std::endl;
-    // std::cout << "offset: " << offset << std::endl;
-    // std::cout << "target: " << targetSquare << std::endl;
+    updateGameState<isWhite>(state, actionInfo);
+    updateMoveCount<isWhite>(state, actionInfo);
 
-
-    const PieceType promotion = Lookup::getPromotion(plane);
-
-    bool resetHalfMoveClock = updateGameState<isWhite>(state, sourceSquare, targetSquare, promotion);
-
-    updateMoveCount<isWhite>(state, resetHalfMoveClock);
-
-    state.status.silentMove();
+    state.status.nextPlayer();
 }
 
-void ChessGameEnv::step(Action action) {
+void ChessGameEnv::step(Move move) {
     state.addHistory(PastGameState(state));
 
-    if (state.status.isWhite) makeMove<true>(state, action);
-    else makeMove<false>(state, action);
+    if (state.status.isWhite) makeMove<true>(state, move);
+    else makeMove<false>(state, move);
 }
 
 void fillObservationWithBoard(std::vector<bool>& obs, const PastGameState& pastState, int startOffset, bool isWhite, bool is2FoldRep) {
@@ -470,8 +475,18 @@ std::vector<bool> generateObservation(const GameState& state) {
     return obs;
 }
 
+bool isRookMove(uint64_t sourceSquare, uint64_t targetSquare) {
+    const Bitboard attacks = Lookup::perSquareRookAttacks[sourceSquare][0];
+    return attacks & (1ull << targetSquare);
+}
+
+bool isBishopMove(uint64_t sourceSquare, uint64_t targetSquare) {
+    const Bitboard attacks = Lookup::perSquareBishopAttacks[sourceSquare][0];
+    return attacks & (1ull << targetSquare);
+}
+
 template<bool isWhite>
-uint64_t getMoveIndex(const Move move) {
+Action getMoveIndex(Move move) {
     const uint64_t sourceSquare = move & 0b111111;
     const uint64_t targetSquare = (move >> 6) & 0b111111;
     const uint64_t flags = (move >> 12) & 0b1111;
@@ -492,17 +507,19 @@ uint64_t getMoveIndex(const Move move) {
     }
 
     // this puts the starting location at square 0
-    const uint64_t normalizedOffset = (targetSquare - sourceSquare) + 64;
+    const int64_t offset = targetSquare - sourceSquare;
 
     // table lookup what move that is
     uint64_t plane;
-    if constexpr (isWhite) {
-        plane = Lookup::offsetToPlaneWhite[normalizedOffset];
+    if (isRookMove(sourceSquare, targetSquare)) {
+        plane = Lookup::getPlaneRook(offset);
+    } else if (isBishopMove(sourceSquare, targetSquare)) {
+        plane = Lookup::getPlaneBishop(offset);
     } else {
-        plane = Lookup::offsetToPlaneBlack[normalizedOffset];
+        plane = Lookup::getPlaneKnight(offset);
     }
-    uint64_t temp = plane + NUM_ACTION_PLANES * sourceSquare;
-    return temp;
+
+    return plane + NUM_ACTION_PLANES * sourceSquare;
 }
 
 template<bool isWhite>

@@ -5,7 +5,6 @@
 #include "game_state.hpp"
 #include "moves.hpp"
 #include "move_gen.hpp"
-#include "test_movegen.hpp"
 
 
 TEST_CASE("GameStatus: to and from pattern alternating") {
@@ -48,15 +47,15 @@ TEST_CASE("SquareOf empty returns 64") {
     REQUIRE(mask == 0ull);
 }
 
-// TEST_CASE("BroadcastBit all 0s") {
-//     const Bitboard board = broadcastBit(0x0000000000000000);
-//     REQUIRE(board == 0ull);
-// }
-//
-// TEST_CASE("BroadcastBit all 1s") {
-//     const Bitboard board = broadcastBit(0x0000000000000001);
-//     REQUIRE(board == 0xffffffffffffffff);
-// }
+TEST_CASE("BroadcastBit all 0s") {
+    const Bitboard board = broadcastBit(0x0000000000000000);
+    REQUIRE(board == 0ull);
+}
+
+TEST_CASE("BroadcastBit all 1s") {
+    const Bitboard board = broadcastBit(0x0000000000000001);
+    REQUIRE(board == 0xffffffffffffffff);
+}
 
 TEST_CASE("BroadcastSingleToMask single one") {
     const Bitboard board = 0b000000000000000000010000000000000;
@@ -187,38 +186,3 @@ GENERATE_PINMASK_DG_TEST("h4", "g5", 0ull);
 GENERATE_PINMASK_DG_TEST("a5", "d2", 0x102040800);
 GENERATE_PINMASK_DG_TEST("a6", "d2", 0ull);
 GENERATE_PINMASK_DG_TEST("e2", "e3", 0ull);
-
-TEST_CASE("Move generation tests") {
-    TestCases testCases = parseTestCases();
-    for (const TestCase& tc : testCases) {
-        SECTION(tc.desc) {
-            GameState state = parseFen(tc.fen);
-            Moves genLegalMoves = Movegen::getLegalMoves(state);
-            REQUIRE(genLegalMoves.size() == tc.moves.size());
-        }
-    }
-}
-
-// TEST_CASE("A pinned knight can never move") {
-//     GameState state = parseFen("8/8/8/4r3/8/4N3/8/4K3");
-//     std::vector<Move> moves;
-//     const Bitboard checkMask = Movegen::getCheckMask<true>(state);
-//     const Bitboard pinMaskHV = Movegen::getPinMaskHV<true>(state);
-//     const Bitboard pinMaskDG = Movegen::getPinMaskDG<true>(state);
-//     Movegen::getLegalKnightMoves<true>(state, checkMask, pinMaskHV, pinMaskDG, moves);
-//     REQUIRE(moves.size() == 0);
-// }
-//
-// TEST_CASE("The knight has to capture") {
-//     GameState state = parseFen("8/8/8/4r3/8/5N2/8/4K3");
-//     std::vector<Move> moves;
-//     const Bitboard checkMask = Movegen::getCheckMask<true>(state);
-//     const Bitboard pinMaskHV = Movegen::getPinMaskHV<true>(state);
-//     const Bitboard pinMaskDG = Movegen::getPinMaskDG<true>(state);
-//     Movegen::getLegalKnightMoves<true>(state, checkMask, pinMaskHV, pinMaskDG, moves);
-//     REQUIRE(moves.size() == 1);
-//     Move move = moves[0];
-//     REQUIRE((move       & 0b111111) == SquareOf(state.w_knight));
-//     REQUIRE((move >> 6  & 0b111111) == SquareOf(state.b_rook));
-//     REQUIRE((move >> 12 & 0b1111  ) == 0b0100);
-// }

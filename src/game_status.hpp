@@ -45,7 +45,7 @@ public:
         return isWhite | wKingC << 1 | wQueenC << 2 | bKingC << 3 | bQueenC << 4 | enpassant << 5;
     }
 
-    void silentMove() {
+    void nextPlayer() {
         isWhite = !isWhite;
     }
 

@@ -1,2 +1,0 @@
-#! /usr/bin/bash
-clang++ test/test.cpp src/game_state.cpp -I src -std=c++2b -mbmi -mbmi2 -o /tmp/test.out && /tmp/test.out

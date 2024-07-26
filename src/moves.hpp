@@ -31,6 +31,12 @@ constexpr Bitboard getEnemyPieces(const GameState &state) {
     if constexpr (isWhite) return state.b_pawn | state.b_rook | state.b_knight | state.b_bishop | state.b_queen | state.b_king;
     else return state.w_pawn | state.w_rook | state.w_knight | state.w_bishop | state.w_queen | state.w_king;
 }
+
+template<bool isWhite>
+bool isEnemyPiece(const GameState& state, uint64_t square) {
+    return getEnemyPieces<isWhite>(state) & (1ull << square);
+}
+
 template<bool isWhite>
 constexpr Bitboard getFriendlyPieces(const GameState &state) {
     if constexpr (isWhite) return state.w_pawn | state.w_rook | state.w_knight | state.w_bishop | state.w_queen | state.w_king;

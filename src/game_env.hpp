@@ -221,11 +221,41 @@ void handleEnpassantCapture(GameState& state, Bitboard targetBoard) {
 }
 
 template<bool isWhite>
+uint64_t convertToColorSquare(uint64_t square) {
+    if constexpr (isWhite) {
+        return square;
+    } else {
+        const uint64_t rank = square / 8;
+        const uint64_t file = square % 8;
+        const  int64_t negRank = rank - 7;
+        return -negRank * 8 + file;
+    }
+}
+
+
+template<bool isWhite>
+int64_t getOffset(uint64_t source, uint64_t target) {
+    if constexpr (isWhite) {
+        return target - source;
+    } else {
+        const int64_t whiteOffset = target - source;
+        const int64_t vOffset = whiteOffset / 8;
+        const int64_t hOffset = whiteOffset - (8 * vOffset);
+        return -vOffset*8 + hOffset;
+    }
+}
+
+template<bool isWhite>
 ActionInfo parseAction(Action action) {
-    const uint16_t sourceSquare = action / NUM_ACTION_PLANES;
+    const uint16_t sourceFile = action / (NUM_ACTION_PLANES*8);
+    const uint16_t sourceRank = (action / NUM_ACTION_PLANES) % 8;
+    const uint16_t tempSourceSquare = sourceRank * 8 + sourceFile;
     const uint16_t plane = action % NUM_ACTION_PLANES;
     const  int16_t offset = Lookup::getOffsetFromPlane<isWhite>(plane);
-    const uint16_t targetSquare = sourceSquare + offset;
+
+    const uint16_t targetSquare = convertToColorSquare<isWhite>(tempSourceSquare + offset);
+    const uint16_t sourceSquare = convertToColorSquare<isWhite>(tempSourceSquare);
+
     const PieceType promotion = Lookup::getPromotion(plane);
     return ActionInfo{
         sourceSquare,
@@ -242,7 +272,6 @@ void updateGameState(GameState& state, ActionInfo ai) {
 
     const Bitboard sourceBoard = 1ull << sourceSquare;
     const Bitboard targetBoard = 1ull << targetSquare;
-    const GameStatus& status = state.status;
     const PieceType type = getPieceType<isWhite>(state, sourceSquare);
 
     // need to do this to ensure the reset of the enpassant
@@ -487,27 +516,28 @@ bool isBishopMove(uint64_t sourceSquare, uint64_t targetSquare) {
 
 template<bool isWhite>
 Action getMoveIndex(Move move) {
-    const uint64_t sourceSquare = move & 0b111111;
-    const uint64_t targetSquare = (move >> 6) & 0b111111;
+    const uint64_t sourceSquare = convertToColorSquare<isWhite>(move & 0b111111);
+    const uint64_t sourceFile = sourceSquare % 8;
+    const uint64_t sourceRank = sourceSquare / 8;
+
+    const uint64_t targetSquare = convertToColorSquare<isWhite>((move >> 6) & 0b111111);
     const uint64_t flags = (move >> 12) & 0b1111;
+
+    const  int64_t offset = targetSquare - sourceSquare;
 
     // check for non queen promotion
     if (flags >= 0b1000 && ((flags & 0b0011) != 0b0011)) {
-        const uint64_t moveOffset = (targetSquare - sourceSquare);
         const uint64_t promoOffset = flags & 0b0011;
         uint64_t plane;
         if constexpr (isWhite) {
             // we map 7, 8, 9 to 64, 67, 70 and their promotions
-            plane = ((moveOffset - 7) * 3) + 64 + promoOffset;
+            plane = ((offset - 7) * 3) + 64 + promoOffset;
         } else {
             // we map -9, -8, -7 to 64, 67, 70 and their promotions
-            plane = ((moveOffset + 9) * 3) + 64 + promoOffset;
+            plane = ((offset + 9) * 3) + 64 + promoOffset;
         }
-        return plane + NUM_ACTION_PLANES * sourceSquare;
+        return sourceFile * (NUM_ACTION_PLANES * 8) + sourceRank * NUM_ACTION_PLANES + plane;
     }
-
-    // this puts the starting location at square 0
-    const int64_t offset = targetSquare - sourceSquare;
 
     // table lookup what move that is
     uint64_t plane;
@@ -519,7 +549,7 @@ Action getMoveIndex(Move move) {
         plane = Lookup::getPlaneKnight(offset);
     }
 
-    return plane + NUM_ACTION_PLANES * sourceSquare;
+    return sourceFile * (NUM_ACTION_PLANES * 8) + sourceRank * NUM_ACTION_PLANES + plane;
 }
 
 template<bool isWhite>

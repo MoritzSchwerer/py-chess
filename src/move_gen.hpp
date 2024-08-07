@@ -455,7 +455,7 @@ Bitboard getSeenSquares(const GameState &state) {
     const Bitboard enemies = getEnemyPieces<isWhite>(state);
     const Bitboard friendlies = getFriendlyPieces<isWhite>(state);
     const Bitboard enemyKing = getEnemyKing<isWhite>(state);
-    const Bitboard blockingPieces = friendlies | enemies & ~enemyKing;
+    const Bitboard blockingPieces = friendlies | (enemies & ~enemyKing);
 
     const Bitboard pawns = getPawns<isWhite>(state);
     Bitboard knights = getKnights<isWhite>(state);
@@ -523,28 +523,28 @@ void getLegalCastleMoves(const GameState &state, Bitboard seenSquares, Bitboard 
     if constexpr (status.isWhite && status.wQueenC) {
         const Bitboard relevantPieceSquares = 0b00001110;
         const Bitboard relevantSeenSquares = 0b00001100;
-        if (!(relevantSeenSquares & seenSquares | relevantPieceSquares & friendlies | relevantPieceSquares & enemies)) {
+        if (!((relevantSeenSquares & seenSquares) | (relevantPieceSquares & friendlies) | (relevantPieceSquares & enemies))) {
             moves.push_back(create_move(4ull, 0ull, 0b0011));
         }
     } 
     if constexpr (status.isWhite && status.wKingC) {
         const Bitboard relevantPieceSquares = 0b01100000;
         const Bitboard relevantSeenSquares = 0b01100000;
-        if (!(relevantSeenSquares & seenSquares | relevantPieceSquares & friendlies | relevantPieceSquares & enemies)) {
+        if (!((relevantSeenSquares & seenSquares) | (relevantPieceSquares & friendlies) | (relevantPieceSquares & enemies))) {
             moves.push_back(create_move(4ull, 7ull, 0b0010));
         }
     } 
     if constexpr (!status.isWhite && status.bQueenC) {
         const Bitboard relevantPieceSquares = 0b00001110ull << 56;
         const Bitboard relevantSeenSquares = 0b00001100ull << 56;
-        if (!(relevantSeenSquares & seenSquares | relevantPieceSquares & friendlies | relevantPieceSquares & enemies)) {
+        if (!((relevantSeenSquares & seenSquares) | (relevantPieceSquares & friendlies) | (relevantPieceSquares & enemies))) {
             moves.push_back(create_move(60ull, 56ull, 0b0011));
         }
     }
     if constexpr (!status.isWhite && status.bKingC) {
         const Bitboard relevantPieceSquares = 0b01100000ull << 56;
         const Bitboard relevantSeenSquares = 0b01100000ull << 56;
-        if (!(relevantSeenSquares & seenSquares | relevantPieceSquares & friendlies | relevantPieceSquares & enemies)) {
+        if (!((relevantSeenSquares & seenSquares) | (relevantPieceSquares & friendlies) | (relevantPieceSquares & enemies))) {
             moves.push_back(create_move(60ull, 63ull, 0b0010));
         }
     }

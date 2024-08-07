@@ -83,28 +83,28 @@ std::array<std::array<Bitboard, bishopAttackMaskSize>, 64> generatePerSquareBish
                 if (1ull << ss & FILE_H) break;
                 const Bitboard targetBoard = 1ull << ts;
                 attacks |= targetBoard;
-                if (targetBoard & blockers | targetBoard & border) break;
+                if ((targetBoard & blockers) | (targetBoard & border)) break;
             }
             // south-east
             for (int64_t ts = ss-7; ts >= 0 && ts < 64; ts-=7) {
                 if (1ull << ss & FILE_H) break;
                 const Bitboard targetBoard = 1ull << ts;
                 attacks |= targetBoard;
-                if (targetBoard & blockers | targetBoard & border) break;
+                if ((targetBoard & blockers) | (targetBoard & border)) break;
             }
             // south-west
             for (uint64_t ts = ss-9; ts >= 0 && ts < 64; ts-=9) {
                 if (1ull << ss & FILE_A) break;
                 const Bitboard targetBoard = 1ull << ts;
                 attacks |= targetBoard;
-                if (targetBoard & blockers | targetBoard & border) break;
+                if ((targetBoard & blockers) | (targetBoard & border)) break;
             }
             // north-west
             for (uint64_t ts = ss+7; ts < 64; ts+=7) {
                 if (1ull << ss & FILE_A) break;
                 const Bitboard targetBoard = 1ull << ts;
                 attacks |= targetBoard;
-                if (targetBoard & blockers | targetBoard & border) break;
+                if ((targetBoard & blockers) | (targetBoard & border)) break;
             }
             perSquareAttacks[ss][i] = attacks;
         }
@@ -131,7 +131,7 @@ std::array<std::array<Bitboard, bishopAttackMaskSize>, 64> generatePerSquareXray
                 const Bitboard targetBoard = 1ull << ts;
                 attacks |= targetBoard;
                 if (targetBoard & blockers) hitCount ++;
-                if (hitCount >= 2 || targetBoard & border) break;
+                if (hitCount >= 2 || (targetBoard & border)) break;
             }
             // south-east
             hitCount = 0;
@@ -140,7 +140,7 @@ std::array<std::array<Bitboard, bishopAttackMaskSize>, 64> generatePerSquareXray
                 const Bitboard targetBoard = 1ull << ts;
                 attacks |= targetBoard;
                 if (targetBoard & blockers) hitCount ++;
-                if (hitCount >= 2 || targetBoard & border) break;
+                if (hitCount >= 2 || (targetBoard & border)) break;
             }
             // south-west
             hitCount = 0;
@@ -149,7 +149,7 @@ std::array<std::array<Bitboard, bishopAttackMaskSize>, 64> generatePerSquareXray
                 const Bitboard targetBoard = 1ull << ts;
                 attacks |= targetBoard;
                 if (targetBoard & blockers) hitCount ++;
-                if (hitCount >= 2 || targetBoard & border) break;
+                if (hitCount >= 2 || (targetBoard & border)) break;
             }
             // north-west
             hitCount = 0;
@@ -158,7 +158,7 @@ std::array<std::array<Bitboard, bishopAttackMaskSize>, 64> generatePerSquareXray
                 const Bitboard targetBoard = 1ull << ts;
                 attacks |= targetBoard;
                 if (targetBoard & blockers) hitCount ++;
-                if (hitCount >= 2 || targetBoard & border) break;
+                if (hitCount >= 2 || (targetBoard & border)) break;
             }
             perSquareAttacks[ss][i] = attacks;
         }
@@ -214,25 +214,25 @@ std::array<std::array<Bitboard, rookAttackMaskSize>, 64> generatePerSquareRookAt
             for (int ts = ss+8; ts < 64; ts+=8) {
                 const Bitboard targetBoard = 1ull << ts;
                 attacks |= targetBoard;
-                if (targetBoard & blockers | targetBoard & hBorder) break;
+                if ((targetBoard & blockers) | (targetBoard & hBorder)) break;
             }
             // east
             for (int ts = ss+1; ts < 64 && ts % 8 > 0; ts++) {
                 const Bitboard targetBoard = 1ull << ts;
                 attacks |= targetBoard;
-                if (targetBoard & blockers | targetBoard & vBorder) break;
+                if ((targetBoard & blockers) | (targetBoard & vBorder)) break;
             }
             // south
             for (int ts = ss-8; ts >= 0; ts-=8) {
                 const Bitboard targetBoard = 1ull << ts;
                 attacks |= targetBoard;
-                if (targetBoard & blockers | targetBoard & hBorder) break;
+                if ((targetBoard & blockers) | (targetBoard & hBorder)) break;
             }
             // west
             for (int ts = ss-1; ts >= 0 && ts % 8 < 7; ts--) {
                 const Bitboard targetBoard = 1ull << ts;
                 attacks |= targetBoard;
-                if (targetBoard & blockers | targetBoard & vBorder) break;
+                if ((targetBoard & blockers) | (targetBoard & vBorder)) break;
             }
             perSquareAttacks[ss][i] = attacks;
         }
@@ -259,7 +259,7 @@ std::array<std::array<Bitboard, rookAttackMaskSize>, 64> generatePerSquareXrayRo
                 const Bitboard targetBoard = 1ull << ts;
                 attacks |= targetBoard;
                 if (targetBoard & blockers) hitCount++;
-                if (hitCount >= 2 || targetBoard & hBorder) break;
+                if (hitCount >= 2 || (targetBoard & hBorder)) break;
             }
             // east
             hitCount = 0;
@@ -267,7 +267,7 @@ std::array<std::array<Bitboard, rookAttackMaskSize>, 64> generatePerSquareXrayRo
                 const Bitboard targetBoard = 1ull << ts;
                 attacks |= targetBoard;
                 if (targetBoard & blockers) hitCount++;
-                if (hitCount >= 2 || targetBoard & vBorder) break;
+                if (hitCount >= 2 || (targetBoard & vBorder)) break;
             }
             // south
             hitCount = 0;
@@ -275,7 +275,7 @@ std::array<std::array<Bitboard, rookAttackMaskSize>, 64> generatePerSquareXrayRo
                 const Bitboard targetBoard = 1ull << ts;
                 attacks |= targetBoard;
                 if (targetBoard & blockers) hitCount++;
-                if (hitCount >= 2| targetBoard & hBorder) break;
+                if ((hitCount >= 2) || (targetBoard & hBorder)) break;
             }
             // west
             hitCount = 0;
@@ -283,7 +283,7 @@ std::array<std::array<Bitboard, rookAttackMaskSize>, 64> generatePerSquareXrayRo
                 const Bitboard targetBoard = 1ull << ts;
                 attacks |= targetBoard;
                 if (targetBoard & blockers) hitCount++;
-                if (hitCount >= 2 || targetBoard & vBorder) break;
+                if (hitCount >= 2 || (targetBoard & vBorder)) break;
             }
             perSquareAttacks[ss][i] = attacks;
         }
@@ -295,32 +295,27 @@ std::array<std::array<Bitboard, rookAttackMaskSize>, 64> perSquareXrayRookAttack
 
 
 constexpr std::array<int8_t, 73> planeToOffsetWhite = {
-    8, 16, 24, 32, 40, 48, 56, 9, 18, 27, 36, 45, 54, 63, 1, 2, 3, 4, 5, 6, 7, -7, -14, -21, -28, -35, -42, -49, -8, -16, -24, -32, -40, -48, -56, -9, -18, -27, -36, -45, -54, -63, -1, -2, -3, -4, -5, -6, -7, 7, 14, 21, 28, 35, 42, 49,
-    15, 17, 10, -6, -15, -17, 6, -10,
+    -9, -1, 7, -8, 8, -7, 1, 9, -18, -2, 14, -16, 16, -14, 2, 18, -27, -3, 21, -24, 24, -21, 3, 27, -36, -4, 28, -32, 32, -28, 4, 36, -45, -5, 35, -40, 40, -35, 5, 45, -54, -6, 42, -48, 48, -42, 6, 54, -63, -7, 49, -56, 56, -49, 7, 63,
+    -10, 6, -17, 15, -15, 17, -6, 10,
     7, 7, 7, 8, 8, 8, 9, 9, 9
 };
 
 constexpr std::array<int8_t, 73> planeToOffsetBlack = {
-    8, 16, 24, 32, 40, 48, 56, 9, 18, 27, 36, 45, 54, 63, 1, 2, 3, 4, 5, 6, 7, -7, -14, -21, -28, -35, -42, -49, -8, -16, -24, -32, -40, -48, -56, -9, -18, -27, -36, -45, -54, -63, -1, -2, -3, -4, -5, -6, -7, 7, 14, 21, 28, 35, 42, 49,
-    15, 17, 10, -6, -15, -17, 6, -10,
+    -9, -1, 7, -8, 8, -7, 1, 9, -18, -2, 14, -16, 16, -14, 2, 18, -27, -3, 21, -24, 24, -21, 3, 27, -36, -4, 28, -32, 32, -28, 4, 36, -45, -5, 35, -40, 40, -35, 5, 45, -54, -6, 42, -48, 48, -42, 6, 54, -63, -7, 49, -56, 56, -49, 7, 63,
+    -10, 6, -17, 15, -15, 17, -6, 10,
     -9, -9, -9, -8, -8, -8, -7, -7, -7
 };
 
-
-// constexpr std::array<int8_t, 56> planeToOffsetQueen = {
-//     8, 16, 24, 32, 40, 48, 56, 9, 18, 27, 36, 45, 54, 63, 1, 2, 3, 4, 5, 6, 7, -7, -14, -21, -28, -35, -42, -49, -8, -16, -24, -32, -40, -48, -56, -9, -18, -27, -36, -45, -54, -63, -1, -2, -3, -4, -5, -6, -7, 7, 14, 21, 28, 35, 42, 49,
-// };
-
 constexpr std::array<int8_t, 56> planeToOffsetRook = {
-    8, 16, 24, 32, 40, 48, 56, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 0, 0, 0, 0, 0, 0, 0, -8, -16, -24, -32, -40, -48, -56, 0, 0, 0, 0, 0, 0, 0, -1, -2, -3, -4, -5, -6, -7, 0, 0, 0, 0, 0, 0, 0,
+    0, -1, 0, -8, 8, 0, 1, 0, 0, -2, 0, -16, 16, 0, 2, 0, 0, -3, 0, -24, 24, 0, 3, 0, 0, -4, 0, -32, 32, 0, 4, 0, 0, -5, 0, -40, 40, 0, 5, 0, 0, -6, 0, -48, 48, 0, 6, 0, 0, -7, 0, -56, 56, 0, 7, 0,
 };
 
 constexpr std::array<int8_t, 56> planeToOffsetBishop = {
-    0, 0, 0, 0, 0, 0, 0, 9, 18, 27, 36, 45, 54, 63, 0, 0, 0, 0, 0, 0, 0, -7, -14, -21, -28, -35, -42, -49, 0, 0, 0, 0, 0, 0, 0, -9, -18, -27, -36, -45, -54, -63, 0, 0, 0, 0, 0, 0, 0, 7, 14, 21, 28, 35, 42, 49,
+    -9, 0, 7, 0, 0, -7, 0, 9, -18, 0, 14, 0, 0, -14, 0, 18, -27, 0, 21, 0, 0, -21, 0, 27, -36, 0, 28, 0, 0, -28, 0, 36, -45, 0, 35, 0, 0, -35, 0, 45, -54, 0, 42, 0, 0, -42, 0, 54, -63, 0, 49, 0, 0, -49, 0, 63,
 };
 
 constexpr std::array<int8_t, 8> planeToOffsetKnight = {
-    15, 17, 10, -6, -15, -17, 6, -10,
+    -10, 6, -17, 15, -15, 17, -6, 10,
 };
 
 constexpr std::array<int8_t, 9> planeToOffsetPawnWhite = {

@@ -31,7 +31,7 @@ uint64_t hashMovingColor() {
 }
 
 uint64_t hashCastlingRights(const GameState& state) {
-    uint64_t hash;
+    uint64_t hash = 0ull;
     const GameStatus status = state.status;
     if (status.wKingC) {
         hash ^= rand64(castlingOffset);
@@ -71,7 +71,7 @@ uint64_t hashPieces(const GameState& state) {
     Bitboard b_queen = state.b_queen; 
     Bitboard b_king = state.b_king; 
 
-    uint64_t hash;
+    uint64_t hash = 0ull;
     Bitloop(w_pawn) {
         const uint64_t square = SquareOf(w_pawn);
         const uint64_t index = getPieceIndex(true, 0ull, square);
@@ -165,7 +165,7 @@ uint64_t hashEnpassant(const GameState& state) {
 
 template<bool isWhite>
 uint64_t hashBoard(const GameState& state) {
-    uint64_t hash;
+    uint64_t hash = 0ull;
     hash ^= hashMovingColor<isWhite>();
     hash ^= hashCastlingRights(state);
     hash ^= hashPieces(state);

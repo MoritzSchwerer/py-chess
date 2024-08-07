@@ -28,7 +28,7 @@ void printBinary(Bitboard board) {
 void printMove(Move move) {
     int source = move & 0x3f;
     int target = (move >> 6) & 0x3f;
-    int flags  = (move >> 12) & 0xf;
+    // int flags  = (move >> 12) & 0xf;
     std::cout << "<Move src: " << source << ", tgt: " << target << ", flags: ";
     for (int i = 3; i >= 0; i--) {
         bool is_set = (move & (1ull << (12+i)));

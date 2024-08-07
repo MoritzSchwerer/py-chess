@@ -23,14 +23,14 @@ PYBIND11_MODULE(chess_env, m) {
     chess_observation.def_readonly("isTerminated", &ChessObservation::isTerminated);
 
     chess_observation.def_property_readonly("observation", 
-                                    [&m](const ChessObservation& co) {
+                                    [](const ChessObservation& co) {
                                         py::array_t<bool> arr(co.observation.size());
                                         std::copy(co.observation.begin(), co.observation.end(), arr.mutable_data());
                                         return arr;
                                     });
 
     chess_observation.def_property_readonly("actionMask", 
-                                    [&m](const ChessObservation& co) {
+                                    [](const ChessObservation& co) {
                                         py::array_t<bool> arr(co.actionMask.size());
                                         std::copy(co.actionMask.begin(), co.actionMask.end(), arr.mutable_data());
                                         return arr;

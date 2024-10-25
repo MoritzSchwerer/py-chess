@@ -1,8 +1,0 @@
-/home/moritz/dev/py-chess/build/CMakeFiles/py-chess.dir
-/home/moritz/dev/py-chess/build/CMakeFiles/test_core.dir
-/home/moritz/dev/py-chess/build/CMakeFiles/test_adapter.dir
-/home/moritz/dev/py-chess/build/CMakeFiles/test_movegen.dir
-/home/moritz/dev/py-chess/build/CMakeFiles/tests.dir
-/home/moritz/dev/py-chess/build/CMakeFiles/test.dir
-/home/moritz/dev/py-chess/build/CMakeFiles/edit_cache.dir
-/home/moritz/dev/py-chess/build/CMakeFiles/rebuild_cache.dir

@@ -1,1 +1,0 @@
-/usr/bin/c++  -mbmi -mbmi2 CMakeFiles/test_adapter.dir/test/test_move_adapter.cpp.o -o test_adapter  -Wl,-rpath,/home/moritz/dev/py-chess/build:/home/moritz/miniconda3/envs/chess/lib _py-chess.so /home/moritz/miniconda3/envs/chess/lib/libpython3.10.so 

@@ -1,4 +1,4 @@
-#include "src/game_env.hpp"
+#include "game_env.hpp"
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 

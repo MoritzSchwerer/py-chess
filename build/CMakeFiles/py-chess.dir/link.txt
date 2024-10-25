@@ -1,0 +1,1 @@
+/usr/bin/c++ -fPIC  -mbmi -mbmi2 -shared -Wl,-soname,_py-chess.so -o _py-chess.so CMakeFiles/py-chess.dir/bindings/bind_perf.cpp.o CMakeFiles/py-chess.dir/src/game_state.cpp.o  -Wl,-rpath,/home/moritz/miniconda3/envs/chess/lib /home/moritz/miniconda3/envs/chess/lib/libpython3.10.so 

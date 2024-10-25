@@ -1,0 +1,27 @@
+[
+{
+  "directory": "/home/moritz/dev/py-chess/build",
+  "command": "/usr/bin/c++ -Dpy_chess_EXPORTS -I/home/moritz/dev/py-chess/include -isystem /home/moritz/miniconda3/envs/chess/include/python3.10 -isystem /home/moritz/miniconda3/envs/chess/lib/python3.10/site-packages/pybind11/include  -mbmi -mbmi2 -fPIC -std=gnu++23 -o CMakeFiles/py-chess.dir/bindings/bind_perf.cpp.o -c /home/moritz/dev/py-chess/bindings/bind_perf.cpp",
+  "file": "/home/moritz/dev/py-chess/bindings/bind_perf.cpp"
+},
+{
+  "directory": "/home/moritz/dev/py-chess/build",
+  "command": "/usr/bin/c++ -Dpy_chess_EXPORTS -I/home/moritz/dev/py-chess/include -isystem /home/moritz/miniconda3/envs/chess/include/python3.10 -isystem /home/moritz/miniconda3/envs/chess/lib/python3.10/site-packages/pybind11/include  -mbmi -mbmi2 -fPIC -std=gnu++23 -o CMakeFiles/py-chess.dir/src/game_state.cpp.o -c /home/moritz/dev/py-chess/src/game_state.cpp",
+  "file": "/home/moritz/dev/py-chess/src/game_state.cpp"
+},
+{
+  "directory": "/home/moritz/dev/py-chess/build",
+  "command": "/usr/bin/c++  -I/home/moritz/dev/py-chess/include -isystem /home/moritz/miniconda3/envs/chess/lib/python3.10/site-packages/pybind11/include -isystem /home/moritz/miniconda3/envs/chess/include/python3.10  -mbmi -mbmi2 -fPIE -std=gnu++23 -o CMakeFiles/test_core.dir/test/test_core.cpp.o -c /home/moritz/dev/py-chess/test/test_core.cpp",
+  "file": "/home/moritz/dev/py-chess/test/test_core.cpp"
+},
+{
+  "directory": "/home/moritz/dev/py-chess/build",
+  "command": "/usr/bin/c++  -I/home/moritz/dev/py-chess/include -isystem /home/moritz/miniconda3/envs/chess/lib/python3.10/site-packages/pybind11/include -isystem /home/moritz/miniconda3/envs/chess/include/python3.10  -mbmi -mbmi2 -fPIE -std=gnu++23 -o CMakeFiles/test_adapter.dir/test/test_move_adapter.cpp.o -c /home/moritz/dev/py-chess/test/test_move_adapter.cpp",
+  "file": "/home/moritz/dev/py-chess/test/test_move_adapter.cpp"
+},
+{
+  "directory": "/home/moritz/dev/py-chess/build",
+  "command": "/usr/bin/c++  -I/home/moritz/dev/py-chess/include -isystem /home/moritz/miniconda3/envs/chess/lib/python3.10/site-packages/pybind11/include -isystem /home/moritz/miniconda3/envs/chess/include/python3.10  -mbmi -mbmi2 -fPIE -std=gnu++23 -o CMakeFiles/test_movegen.dir/test/test_movegen.cpp.o -c /home/moritz/dev/py-chess/test/test_movegen.cpp",
+  "file": "/home/moritz/dev/py-chess/test/test_movegen.cpp"
+}
+]

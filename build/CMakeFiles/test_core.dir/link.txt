@@ -1,0 +1,1 @@
+/usr/bin/c++  -mbmi -mbmi2 CMakeFiles/test_core.dir/test/test_core.cpp.o -o test_core  -Wl,-rpath,/home/moritz/dev/py-chess/build:/home/moritz/miniconda3/envs/chess/lib _py-chess.so /home/moritz/miniconda3/envs/chess/lib/libpython3.10.so 

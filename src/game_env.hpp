@@ -66,6 +66,10 @@ public:
 
     void step(const Move move);
     ChessObservation observe();
+
+    void showBoard() const {
+        printBoard(state, 0ull);
+    }
 };
 
 template<bool isWhite>

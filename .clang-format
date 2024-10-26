@@ -1,0 +1,10 @@
+BasedOnStyle: Google
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+
+IncludeCategories:
+- Regex: '^<.*>'             # Matches system includes
+  Priority: -1               # Higher priority for system includes
+- Regex: '^".*"'             # Matches project includes
+  Priority: 0

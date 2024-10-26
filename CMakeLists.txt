@@ -4,14 +4,14 @@ project(py-chess)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Set C++ standard
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Enable PIC for all targets
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # compile flags
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mbmi -mbmi2")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mbmi -mbmi2 -std=c++2b")
 
 # Find Python and pybind11
 find_package(Python 3 REQUIRED COMPONENTS Interpreter Development)

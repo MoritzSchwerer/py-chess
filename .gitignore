@@ -1,6 +1,10 @@
 # Prerequisites
 *.d
 
+# cache folder
+.cache/
+.mypy_cache/
+
 # Compiled Object files
 *.slo
 *.lo

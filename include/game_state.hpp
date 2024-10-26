@@ -1,11 +1,11 @@
 #pragma once
 
-#include <string>
 #include <array>
 #include <map>
+#include <string>
 
-#include "types.hpp"
 #include "game_status.hpp"
+#include "types.hpp"
 
 struct GameState;
 
@@ -29,7 +29,7 @@ struct PastGameState {
     uint64_t positionHash;
 
     PastGameState() = default;
-    PastGameState(const GameState& state);
+    PastGameState(const GameState &state);
 };
 
 struct GameState {
@@ -56,38 +56,38 @@ struct GameState {
 
     GameStatus status;
 
-    GameState() : 
-        w_pawn(0x000000000000FF00),
-        w_rook(0x0000000000000081),
-        w_knight(0x0000000000000042),
-        w_bishop(0x0000000000000024),
-        w_queen(0x0000000000000008),
-        w_king(0x0000000000000010),
-        b_pawn(0x00FF000000000000),
-        b_rook(0x8100000000000000),
-        b_knight(0x4200000000000000),
-        b_bishop(0x2400000000000000),
-        b_queen(0x0800000000000000),
-        b_king(0x1000000000000000),
-        enpassant_board(0ull),
-        halfMoveClock(0ul),
-        fullMoveCount(1ul),
-        stateHistory(),
-        positionHashes(),
-        status() {
-            status.isWhite = true;
-            status.wKingC = true;
-            status.wQueenC = true;
-            status.bKingC = true;
-            status.bQueenC = true;
-            status.enpassant = false;
-        }
+    GameState()
+        : w_pawn(0x000000000000FF00),
+          w_rook(0x0000000000000081),
+          w_knight(0x0000000000000042),
+          w_bishop(0x0000000000000024),
+          w_queen(0x0000000000000008),
+          w_king(0x0000000000000010),
+          b_pawn(0x00FF000000000000),
+          b_rook(0x8100000000000000),
+          b_knight(0x4200000000000000),
+          b_bishop(0x2400000000000000),
+          b_queen(0x0800000000000000),
+          b_king(0x1000000000000000),
+          enpassant_board(0ull),
+          halfMoveClock(0ul),
+          fullMoveCount(1ul),
+          stateHistory(),
+          positionHashes(),
+          status() {
+        status.isWhite = true;
+        status.wKingC = true;
+        status.wQueenC = true;
+        status.bKingC = true;
+        status.bQueenC = true;
+        status.enpassant = false;
+    }
 
-    void addHistory(const PastGameState& pastState);
+    void addHistory(const PastGameState &pastState);
     void setEnpassant(Bitboard enpassantBoard);
     void clearEnpassant();
     uint64_t getPositionHash() const;
 };
 
 GameState GameStateEmpty();
-GameState parseFen(const std::string& fen);
+GameState parseFen(const std::string &fen);

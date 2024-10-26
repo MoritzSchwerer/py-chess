@@ -8,7 +8,7 @@
 namespace Zobrist {
 
 constexpr uint64_t numPiecePositionColorElements = 768;
-constexpr uint64_t blackOffset = 384; // (768 / 2)
+constexpr uint64_t blackOffset = 384;  // (768 / 2)
 constexpr uint64_t movingColorOffset = numPiecePositionColorElements;
 constexpr uint64_t castlingOffset = numPiecePositionColorElements + 2;
 constexpr uint64_t enpassantOffset = castlingOffset + 4;
@@ -24,10 +24,12 @@ uint64_t rand64(uint64_t n) {
     return n;
 }
 
-template<bool isWhite>
+template <bool isWhite>
 uint64_t hashMovingColor() {
-    if constexpr (isWhite) return rand64(movingColorOffset);
-    else return rand64(movingColorOffset+1);
+    if constexpr (isWhite)
+        return rand64(movingColorOffset);
+    else
+        return rand64(movingColorOffset + 1);
 }
 
 uint64_t hashCastlingRights(const GameState& state) {
@@ -37,39 +39,39 @@ uint64_t hashCastlingRights(const GameState& state) {
         hash ^= rand64(castlingOffset);
     }
     if (status.wQueenC) {
-        hash ^= rand64(castlingOffset+1);
+        hash ^= rand64(castlingOffset + 1);
     }
     if (status.bKingC) {
-        hash ^= rand64(castlingOffset+2);
+        hash ^= rand64(castlingOffset + 2);
     }
     if (status.bQueenC) {
-        hash ^= rand64(castlingOffset+3);
+        hash ^= rand64(castlingOffset + 3);
     }
     return hash;
 }
 
 uint64_t getPieceIndex(bool isWhite, uint64_t typeIndex, uint64_t square) {
     if (isWhite) {
-        return typeIndex*64 + square;
+        return typeIndex * 64 + square;
     } else {
-        return typeIndex*64 + square + blackOffset;
+        return typeIndex * 64 + square + blackOffset;
     }
 }
 
 uint64_t hashPieces(const GameState& state) {
-    Bitboard w_pawn = state.w_pawn; 
-    Bitboard w_rook = state.w_rook; 
-    Bitboard w_knight = state.w_knight; 
-    Bitboard w_bishop = state.w_bishop; 
-    Bitboard w_queen = state.w_queen; 
-    Bitboard w_king = state.w_king; 
+    Bitboard w_pawn = state.w_pawn;
+    Bitboard w_rook = state.w_rook;
+    Bitboard w_knight = state.w_knight;
+    Bitboard w_bishop = state.w_bishop;
+    Bitboard w_queen = state.w_queen;
+    Bitboard w_king = state.w_king;
 
-    Bitboard b_pawn = state.b_pawn; 
-    Bitboard b_rook = state.b_rook; 
-    Bitboard b_knight = state.b_knight; 
-    Bitboard b_bishop = state.b_bishop; 
-    Bitboard b_queen = state.b_queen; 
-    Bitboard b_king = state.b_king; 
+    Bitboard b_pawn = state.b_pawn;
+    Bitboard b_rook = state.b_rook;
+    Bitboard b_knight = state.b_knight;
+    Bitboard b_bishop = state.b_bishop;
+    Bitboard b_queen = state.b_queen;
+    Bitboard b_king = state.b_king;
 
     uint64_t hash = 0ull;
     Bitloop(w_pawn) {
@@ -146,7 +148,7 @@ uint64_t hashPieces(const GameState& state) {
     return hash;
 }
 
-template<bool isWhite>
+template <bool isWhite>
 uint64_t hashEnpassant(const GameState& state) {
     // if there is an enpassant pawn calculate index [0, 16)
     if (state.status.enpassant) {
@@ -162,8 +164,7 @@ uint64_t hashEnpassant(const GameState& state) {
     return 0ull;
 }
 
-
-template<bool isWhite>
+template <bool isWhite>
 uint64_t hashBoard(const GameState& state) {
     uint64_t hash = 0ull;
     hash ^= hashMovingColor<isWhite>();
@@ -173,6 +174,4 @@ uint64_t hashBoard(const GameState& state) {
     return hash;
 }
 
-
-}
-
+}  // namespace Zobrist

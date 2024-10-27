@@ -1,7 +1,8 @@
 import sys
 import random
+import numpy as np
 
-from chess_env import ChessGameEnv
+from _chess_env import ChessGameEnv
 from pettingzoo.classic import chess_v6
 from pettingzoo.classic.chess.chess_utils import *
 
@@ -15,6 +16,8 @@ def main():
 
     correct_env.reset()
 
+    actions_taken = []
+
     for i in range(500):
         player = "player_0" if i % 2 == 0 else "player_1"
 
@@ -27,10 +30,7 @@ def main():
         print(f"Move number: {i+1}")
         print(orig_actions)
         print(co_actions)
-        # assert (
-        #     len(orig_actions) == len(co_actions)
-        # ), f"Man, lengths don't match up, got: {len(orig_actions)} and {len(co_actions)}"
-        # assert np.all(orig_actions == co_actions), "whoops, error"
+        # TODO: currently termination is not checked for correctness
         if my_obs.isTerminated:
             print("Terminated")
             sys.exit(0)
@@ -38,30 +38,29 @@ def main():
             print("ERRORED: ")
             my_env.showBoard()
 
-            indices = (orig_actions != co_actions).nonzero()[0]
-            for idx in indices:
-                my_action = orig_actions[idx]
-                correct_action = co_actions[idx]
-                print()
-                print("don't agree on index: ", idx)
-                print(f"My value: {my_action}")
-                print(f"Correct value: {correct_action}")
+            try:
+                indices = (orig_actions != co_actions).nonzero()[0]
+            except:
+                unique1 = np.setdiff1d(orig_actions, co_actions)
+                unique2 = np.setdiff1d(co_actions, orig_actions)
+                print(f"To many in my implementation: {unique1}")
+                print(f"Not found by my implementation: {unique2}")
 
-                source_file = my_action // (73 * 8)
-                source_rank = (my_action // 73) % 8
-                plane = my_action % 73
-                print(f"My stats: {source_file}, {source_rank}, {plane}")
-
-                source_file = correct_action // (73 * 8)
-                source_rank = (correct_action // 73) % 8
-                plane = correct_action % 73
-                print(f"Correct stats: {source_file}, {source_rank}, {plane}")
-
+                print(f"Player to move: {'White' if player == 'player_0' else 'Black'}")
+                if unique2.size > 0:
+                    for u in unique2:
+                        source_file = u // (73 * 8)
+                        source_rank = (u // 73) % 8
+                        plane = u % 73
+                        print(f"{u}: Source={source_file},{source_rank}, Move={plane}")
+                print("Actions taken to get to here: ")
+                print(actions_taken)
             sys.exit(1)
 
         action_idx = random.choice(range(len(orig_actions)))
         my_env.step(orig_actions[action_idx])
         correct_env.step(co_actions[action_idx])
+        actions_taken.append(co_actions[action_idx])
 
 
 if __name__ == "__main__":

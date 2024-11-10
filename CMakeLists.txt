@@ -35,21 +35,33 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${Python_INCLUDE_DIRS})
 # Set output name of the shared library to match Python's naming convention (e.g., _project_name.so)
 set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "_")
 
+# Add an executable for main.cpp
+add_executable(app src/main.cpp)
+
+# Link the executable to the chess_env library
+target_link_libraries(app ${PROJECT_NAME})
+
 
 # Optionally add tests if you have them
 enable_testing()
 
 add_executable(test_core test/test_core.cpp)
 add_executable(test_adapter test/test_move_adapter.cpp)
-add_executable(test_movegen test/test_movegen.cpp)
+# add_executable(test_movegen test/test_movegen.cpp)
+add_executable(test_golden test/test_golden.cpp)
 
 target_link_libraries(test_core ${PROJECT_NAME})
 target_link_libraries(test_adapter ${PROJECT_NAME})
-target_link_libraries(test_movegen ${PROJECT_NAME})
+# target_link_libraries(test_movegen ${PROJECT_NAME})
+target_link_libraries(test_golden ${PROJECT_NAME})
+
+target_compile_definitions(test_golden PRIVATE DATA_DIR="${CMAKE_SOURCE_DIR}/test/data")
 
 add_test(NAME test_core COMMAND test_core)
 add_test(NAME test_adapter COMMAND test_adapter)
-add_test(NAME test_movegen COMMAND test_movegen)
+# add_test(NAME test_movegen COMMAND test_movegen)
+add_test(NAME test_golden COMMAND test_golden)
+
 
 add_custom_target(tests
     COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure

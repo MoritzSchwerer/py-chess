@@ -23,6 +23,8 @@ class ChessGameEnv {
     ChessObservation observe();
     void showBoard() const;
 
+    GameState getState() const;
+
    private:
     GameState state;
 };
@@ -46,3 +48,5 @@ void ChessGameEnv::step(Move move) {
     else
         makeMove<false>(state, move);
 }
+
+GameState ChessGameEnv::getState() const { return state; }

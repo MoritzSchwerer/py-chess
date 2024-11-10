@@ -285,13 +285,7 @@ inline bool enablesEnpassant(GameState& state, Bitboard sourceBoard,
 }
 
 template <bool isWhite>
-inline void updateMoveCount(GameState& state, ActionInfo ai) {
-    const uint16_t sourceSquare = ai.sourceSquare;
-    const uint16_t targetSquare = ai.targetSquare;
-
-    const bool isPawnMove = getPawns<isWhite>(state) & (1ull << sourceSquare);
-    const bool isCapture = isEnemyPiece<isWhite>(state, targetSquare);
-
+inline void updateMoveCount(GameState& state, bool isPawnMove, bool isCapture) {
     if (isPawnMove || isCapture) {
         state.halfMoveClock = 0;
         // this can be better since moves that loose the right
@@ -308,8 +302,12 @@ template <bool isWhite>
 inline void makeMove(GameState& state, Action action) {
     ActionInfo actionInfo = parseAction<isWhite>(action);
 
+    const bool isPawnMove =
+        getPawns<isWhite>(state) & (1ull << actionInfo.sourceSquare);
+    const bool isCapture =
+        isEnemyPiece<isWhite>(state, actionInfo.targetSquare);
     updateGameState<isWhite>(state, actionInfo);
-    updateMoveCount<isWhite>(state, actionInfo);
+    updateMoveCount<isWhite>(state, isPawnMove, isCapture);
 
     state.status.nextPlayer();
 }

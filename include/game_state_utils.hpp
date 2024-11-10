@@ -110,9 +110,9 @@ inline void removeEnemyPiece(GameState& state, Bitboard targetBoard) {
 template <bool isWhite>
 inline bool isCastle(uint8_t ss, uint8_t ts) {
     if constexpr (isWhite) {
-        return ss == 4 && (ts == 0 || ts == 7);
+        return ss == 4 && (ts == 2 || ts == 6);
     } else {
-        return ss == 60 && (ts == 56 || ts == 63);
+        return ss == 60 && (ts == 58 || ts == 62);
     }
 }
 
@@ -133,13 +133,13 @@ inline void handleCastling(GameState& state, uint8_t sourceSquare,
         }
     } else {
         if (sourceSquare > targetSquare) {
-            state.w_king = 0b00000100ull << 56;
-            state.w_rook &= ~0b00000001ull << 56;
-            state.w_rook |= 0b00001000ull << 56;
+            state.b_king = 0b00000100ull << 56;
+            state.b_rook &= ~0b00000001ull << 56;
+            state.b_rook |= 0b00001000ull << 56;
         } else {
-            state.w_king = 0b01000000ull << 56;
-            state.w_rook &= ~0b10000000ull << 56;
-            state.w_rook |= 0b00100000ull << 56;
+            state.b_king = 0b01000000ull << 56;
+            state.b_rook &= ~0b10000000ull << 56;
+            state.b_rook |= 0b00100000ull << 56;
         }
     }
     state.status.removeCastlingRights<isWhite>();

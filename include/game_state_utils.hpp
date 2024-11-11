@@ -134,11 +134,11 @@ inline void handleCastling(GameState& state, uint8_t sourceSquare,
     } else {
         if (sourceSquare > targetSquare) {
             state.b_king = 0b00000100ull << 56;
-            state.b_rook &= ~0b00000001ull << 56;
+            state.b_rook &= ~(0b00000001ull << 56);
             state.b_rook |= 0b00001000ull << 56;
         } else {
             state.b_king = 0b01000000ull << 56;
-            state.b_rook &= ~0b10000000ull << 56;
+            state.b_rook &= ~(0b10000000ull << 56);
             state.b_rook |= 0b00100000ull << 56;
         }
     }

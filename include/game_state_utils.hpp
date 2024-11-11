@@ -243,11 +243,15 @@ inline void updateGameState(GameState& state, ActionInfo ai) {
     const Bitboard enpassantBoard = state.enpassant_board;
     state.clearEnpassant();
 
-    if (isCastle<isWhite>(sourceSquare, targetSquare)) {
+    // TODO: make this more readable
+    if (type == PieceType::King &&
+        isCastle<isWhite>(sourceSquare, targetSquare)) {
         handleCastling<isWhite>(state, sourceSquare, targetSquare);
         return;
     }
 
+    // TODO: currently we only take casteling posibility if we castle not if the
+    // rook is taken
     updateCastlingRights<isWhite>(state, sourceBoard, type);
 
     Bitboard& pieceBoard = getBitboardFromSquare<isWhite>(state, sourceBoard);

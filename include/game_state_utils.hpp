@@ -148,7 +148,7 @@ inline void handleCastling(GameState& state, uint8_t sourceSquare,
 
 template <bool isWhite>
 inline void updateCastlingRights(GameState& state, Bitboard sourceBoard,
-                                 PieceType type) {
+                                 Bitboard targetBoard, PieceType type) {
     // update castling rights king moves
     if (type == PieceType::King) {
         state.status.removeCastlingRights<isWhite>();
@@ -162,6 +162,13 @@ inline void updateCastlingRights(GameState& state, Bitboard sourceBoard,
         if (sourceBoard & initialRookRight<isWhite>()) {
             state.status.removeCastlingRightsRight<isWhite>();
         }
+    }
+    // update casteling if rook is taken
+    if (targetBoard & initialRookLeft<!isWhite>()) {
+        state.status.removeCastlingRightsLeft<!isWhite>();
+    }
+    if (targetBoard & initialRookRight<!isWhite>()) {
+        state.status.removeCastlingRightsRight<!isWhite>();
     }
 }
 
@@ -250,9 +257,7 @@ inline void updateGameState(GameState& state, ActionInfo ai) {
         return;
     }
 
-    // TODO: currently we only take casteling posibility if we castle not if the
-    // rook is taken
-    updateCastlingRights<isWhite>(state, sourceBoard, type);
+    updateCastlingRights<isWhite>(state, sourceBoard, targetBoard, type);
 
     Bitboard& pieceBoard = getBitboardFromSquare<isWhite>(state, sourceBoard);
     pieceBoard &= ~sourceBoard;

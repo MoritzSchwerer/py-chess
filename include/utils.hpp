@@ -217,29 +217,29 @@ void printBoard(const GameState& state, const Bitboard& highlight) {
             if (highlight & mask) {
                 std::cout << "\033[31m";  // Red
             }
-            if (state.w_pawn & mask)
+            if (state.b_pawn & mask)
                 std::cout << "♙";
-            else if (state.w_rook & mask)
-                std::cout << "♖";
-            else if (state.w_knight & mask)
-                std::cout << "♘";
-            else if (state.w_bishop & mask)
-                std::cout << "♗";
-            else if (state.w_queen & mask)
-                std::cout << "♕";
-            else if (state.w_king & mask)
-                std::cout << "♔";
-            else if (state.b_pawn & mask)
-                std::cout << "♟";
             else if (state.b_rook & mask)
-                std::cout << "♜";
+                std::cout << "♖";
             else if (state.b_knight & mask)
-                std::cout << "♞";
+                std::cout << "♘";
             else if (state.b_bishop & mask)
-                std::cout << "♝";
+                std::cout << "♗";
             else if (state.b_queen & mask)
-                std::cout << "♛";
+                std::cout << "♕";
             else if (state.b_king & mask)
+                std::cout << "♔";
+            else if (state.w_pawn & mask)
+                std::cout << "♟";
+            else if (state.w_rook & mask)
+                std::cout << "♜";
+            else if (state.w_knight & mask)
+                std::cout << "♞";
+            else if (state.w_bishop & mask)
+                std::cout << "♝";
+            else if (state.w_queen & mask)
+                std::cout << "♛";
+            else if (state.w_king & mask)
                 std::cout << "♚";
             else
                 std::cout << "-";

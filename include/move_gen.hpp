@@ -14,6 +14,8 @@ Move create_move(Bitboard from, Bitboard to, uint64_t flags) {
     return (from & 0x3f) | ((to & 0x3f) << 6) | ((flags & 0xf) << 12);
 }
 
+// TODO: make double check clear entire checkmask to zero
+// so no move will be possible
 template <bool isWhite>
 Bitboard getCheckMask(GameState state) {
     const Bitboard enemies = getEnemyPieces<isWhite>(state);
@@ -22,6 +24,7 @@ Bitboard getCheckMask(GameState state) {
     const uint64_t kingSquare = SquareOf(king);
 
     Bitboard checkMask = 0xffffffffffffffff;
+    Bitboard checkMaskSingle = 0ull;
 
     // pawn attacks
     Bitboard pawns = getEnemyPawns<isWhite>(state);
@@ -33,6 +36,7 @@ Bitboard getCheckMask(GameState state) {
             pawnAttackRight<!isWhite>(sourceBoard & ~FILE_H);
         const Bitboard broadcasted = broadcastSingleToMask(king & attacks);
         checkMask ^= sourceBoard & broadcasted;
+        checkMaskSingle |= sourceBoard & broadcasted;
     }
     // knight attacks
     Bitboard knights = getEnemyKnights<isWhite>(state);
@@ -42,6 +46,7 @@ Bitboard getCheckMask(GameState state) {
         const Bitboard attacks = Lookup::knightAttacks[sourceSquare];
         const Bitboard broadcasted = broadcastSingleToMask(king & attacks);
         checkMask ^= sourceBoard & broadcasted;
+        checkMaskSingle |= sourceBoard & broadcasted;
     }
 
     // rook attacks (+queen rook attacks)
@@ -75,6 +80,7 @@ Bitboard getCheckMask(GameState state) {
         // 4. remove attacked squares that don't point at the king
 
         checkMask ^= tempCheckMap;
+        checkMaskSingle |= sourceBoard & broadcasted;
     }
 
     // bishop attacks (+queen bishop attacks)
@@ -109,6 +115,7 @@ Bitboard getCheckMask(GameState state) {
         tempCheckMap &= broadcasted;
 
         checkMask ^= tempCheckMap;
+        checkMaskSingle |= sourceBoard & broadcasted;
     }
     // here we flip and check if there is ones
     // and set the entire map to one if so
@@ -122,6 +129,11 @@ Bitboard getCheckMask(GameState state) {
     // that returns all ones if there is no check
     // and otherwise the "check path" including the attacker
     checkMask ^= broadcastSingleToMask(~checkMask);
+
+    // this cleverly sets all bits to 1 if we have multiple checks other wise
+    // all bits are 0
+    Bitboard doubleCheckMask = -(_mm_popcnt_u64(checkMaskSingle) > 1);
+    checkMask &= ~doubleCheckMask;
     return checkMask;
 }
 
@@ -600,7 +612,7 @@ void getLegalCastleMoves(const GameState &state, Bitboard seenSquares,
         if (!((relevantSeenSquares & seenSquares) |
               (relevantPieceSquares & friendlies) |
               (relevantPieceSquares & enemies))) {
-            moves.push_back(create_move(4ull, 1ull, 0b0011));
+            moves.push_back(create_move(4ull, 2ull, 0b0011));
         }
     }
     if constexpr (status.isWhite && status.wKingC) {
@@ -618,7 +630,7 @@ void getLegalCastleMoves(const GameState &state, Bitboard seenSquares,
         if (!((relevantSeenSquares & seenSquares) |
               (relevantPieceSquares & friendlies) |
               (relevantPieceSquares & enemies))) {
-            moves.push_back(create_move(60ull, 57ull, 0b0011));
+            moves.push_back(create_move(60ull, 58ull, 0b0011));
         }
     }
     if constexpr (!status.isWhite && status.bKingC) {

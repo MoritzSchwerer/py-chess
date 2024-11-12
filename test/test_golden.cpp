@@ -1,14 +1,14 @@
 #define CATCH_CONFIG_MAIN
+#include <bitset>
 #include <catch2/catch.hpp>
 #include <fstream>
 #include <sstream>
-#include <vector>
 #include <string>
-#include <bitset>
+#include <vector>
 
 #include "game_env.hpp"
-#include "utils.hpp"
 #include "lookup.hpp"
+#include "utils.hpp"
 
 struct TestCase {
     std::vector<int> input_actions;
@@ -29,7 +29,7 @@ struct TestResult {
 };
 
 // Helper function to convert bool mask to vector of ints
-std::vector<int> actionMaskToIndices(const std::vector<bool> &mask) {
+std::vector<int> actionMaskToIndices(const std::vector<bool>& mask) {
     std::vector<int> result;
     for (int i = 0; i < mask.size(); ++i) {
         if (mask[i]) {
@@ -58,13 +58,15 @@ bool parseTestCase(const std::string& line, TestCase& test_case) {
     }
 
     test_case.input_actions = parseActionList(line.substr(0, separator_pos));
-    test_case.expected_actions = parseActionList(line.substr(separator_pos + 1));
+    test_case.expected_actions =
+        parseActionList(line.substr(separator_pos + 1));
 
     return true;
 }
 
 // Generator function to load test cases from the file
-std::vector<TestCase> loadTestCases(const std::string& file_path, int max_lines) {
+std::vector<TestCase> loadTestCases(const std::string& file_path,
+                                    int max_lines) {
     std::ifstream data_file(file_path);
     REQUIRE(data_file.is_open());
 
@@ -87,7 +89,7 @@ std::vector<TestCase> loadTestCases(const std::string& file_path, int max_lines)
 }
 
 // Overload operator<< for std::vector<int>
-template<typename T>
+template <typename T>
 std::ostream& operator<<(std::ostream& os, const std::vector<T>& vect) {
     os << "[";
     for (size_t i = 0; i < vect.size(); ++i) {
@@ -100,7 +102,8 @@ std::ostream& operator<<(std::ostream& os, const std::vector<T>& vect) {
     return os;
 }
 
-std::vector<int> getMissingActions(const std::vector<int>& expected, const std::vector<int>& actual) {
+std::vector<int> getMissingActions(const std::vector<int>& expected,
+                                   const std::vector<int>& actual) {
     std::vector<int> missing;
     for (int i = 0; i < expected.size(); ++i) {
         bool foundMatch = false;
@@ -117,7 +120,8 @@ std::vector<int> getMissingActions(const std::vector<int>& expected, const std::
     return missing;
 }
 
-std::vector<int> getExtraActions(const std::vector<int>& expected, const std::vector<int>& actual) {
+std::vector<int> getExtraActions(const std::vector<int>& expected,
+                                 const std::vector<int>& actual) {
     std::vector<int> extra;
     for (int i = 0; i < actual.size(); ++i) {
         bool foundMatch = false;
@@ -142,12 +146,12 @@ std::string getActionInfo(const int action, bool isWhite) {
     // const uint16_t tempSourceSquare = sourceRank * 8 + sourceFile;
     const uint16_t plane = action % NUM_ACTION_PLANES;
 
-    uint16_t sourceSquare = convertToColorSquare<true>(sourceFile + sourceRank*8);
+    uint16_t sourceSquare =
+        convertToColorSquare<true>(sourceFile + sourceRank * 8);
     int16_t offset = Lookup::getOffsetFromPlane<true>(plane);
     if (!isWhite) {
         offset = Lookup::getOffsetFromPlane<false>(plane);
-        sourceSquare =
-            convertToColorSquare<false>(sourceFile + sourceRank * 8);
+        sourceSquare = convertToColorSquare<false>(sourceFile + sourceRank * 8);
     }
     uint16_t sf = sourceSquare % 8;
     uint16_t sr = sourceSquare / 8;
@@ -160,7 +164,8 @@ std::string getActionInfo(const int action, bool isWhite) {
 std::string actionVectorToString(const std::vector<int>& vect, bool isWhite) {
     std::string result = "[";
     for (size_t i = 0; i < vect.size(); ++i) {
-        // result += std::to_string(vect[i]) + " (" + getActionInfo(vect[i], isWhite) + ")";
+        // result += std::to_string(vect[i]) + " (" + getActionInfo(vect[i],
+        // isWhite) + ")";
         result += "(" + getActionInfo(vect[i], isWhite) + ")";
         if (i != vect.size() - 1) {
             result += ", ";
@@ -170,31 +175,34 @@ std::string actionVectorToString(const std::vector<int>& vect, bool isWhite) {
     return result;
 }
 
-
 // Helper function to print expected and actual actions
 void printExpectedAndActual(std::ostream& os, const TestResult& result) {
     bool isWhite = result.state.status.isWhite;
-    os << "Expected: " << actionVectorToString(result.expected_actions, isWhite) << "\n";
-    os << "Actual  : " << actionVectorToString(result.generated_actions, isWhite) << "\n";
+    os << "Expected: " << actionVectorToString(result.expected_actions, isWhite)
+       << "\n";
+    os << "Actual  : "
+       << actionVectorToString(result.generated_actions, isWhite) << "\n";
 }
-
-
 
 // Overload operator<< for TestResult
 std::ostream& operator<<(std::ostream& os, const TestResult& result) {
     // Case 1: Perfect match
     if (result.expected_actions == result.generated_actions) {
-        os << "Expected: " << result.expected_actions 
+        os << "Expected: " << result.expected_actions
            << " - Perfect match with generated actions.";
-    } 
+    }
     // Case 2: At least one incorrect
     else {
         bool isWhite = result.state.status.isWhite;
-        std::vector<int> missing_actions = getMissingActions(result.expected_actions, result.generated_actions);
-        std::vector<int> extra_actions = getExtraActions(result.expected_actions, result.generated_actions);
+        std::vector<int> missing_actions = getMissingActions(
+            result.expected_actions, result.generated_actions);
+        std::vector<int> extra_actions =
+            getExtraActions(result.expected_actions, result.generated_actions);
         printExpectedAndActual(os, result);
-        os << "The following actions were missing: " << actionVectorToString(missing_actions, isWhite) << "\n";
-        os << "Generated extra actions: " << actionVectorToString(extra_actions, isWhite) << "\n";
+        os << "The following actions were missing: "
+           << actionVectorToString(missing_actions, isWhite) << "\n";
+        os << "Generated extra actions: "
+           << actionVectorToString(extra_actions, isWhite) << "\n";
         os << "FEN: " << generateFEN(result.state);
     }
     return os;
@@ -210,7 +218,8 @@ void checkTestResult(const TestResult& result) {
 
 TEST_CASE("Golden master tests for chess library actions", "[chess]") {
     // Load the test cases using the generator
-    const auto test_cases = loadTestCases(DATA_DIR "/chess_failure_cases.txt", 20);
+    const auto test_cases =
+        loadTestCases(DATA_DIR "/chess_failure_cases.txt", 1000);
 
     // Use Catch2's GENERATE feature to iterate over each test case
     const auto& test_case = GENERATE_REF(from_range(test_cases));

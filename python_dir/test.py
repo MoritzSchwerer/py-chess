@@ -36,7 +36,9 @@ def check_termination(my_obs):
 
 def compare_actions(orig_actions, co_actions, actions_taken):
     """Compare available actions between custom and reference environments."""
-    if len(orig_actions) != len(co_actions):
+    if list(orig_actions) != list(co_actions):
+        print(orig_actions)
+        print(co_actions)
         save_failure_case(actions_taken, co_actions)
         return False  # Return False to indicate a failure was logged
     return True
@@ -84,13 +86,13 @@ def play_single_game(max_moves=500):
             return  # Game ended normally
 
         if not compare_actions(orig_actions, co_actions, actions_taken):
-            # print(f"wrong actions: {move_count}")
+            print(f"wrong actions: {move_count}")
             return  # Stop this game on discrepancy, already logged
 
         if not execute_actions(
             my_env, correct_env, orig_actions, co_actions, actions_taken
         ):
-            # print(f"error: {move_count}")
+            print(f"error: {move_count}")
             return  # got an error in cpp
 
 

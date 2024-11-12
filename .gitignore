@@ -2,6 +2,8 @@
 *.d
 build/
 
+**/chess_failure_cases.txt
+
 # cache folder
 .cache/
 .mypy_cache/

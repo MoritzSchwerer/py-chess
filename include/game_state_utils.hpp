@@ -494,6 +494,7 @@ inline bool isBishopMove(uint64_t sourceSquare, uint64_t targetSquare) {
 
 template <bool isWhite>
 inline Action getMoveIndex(Move move) {
+    // TODO: make the bit ops here into a function
     const uint64_t sourceSquare =
         convertToColorSquare<isWhite>(move & 0b111111);
     const uint64_t sourceFile = sourceSquare % 8;
@@ -506,16 +507,10 @@ inline Action getMoveIndex(Move move) {
     const int64_t offset = targetSquare - sourceSquare;
 
     // check for non queen promotion
+    // TODO: turn this into a function
     if (flags >= 0b1000 && ((flags & 0b0011) != 0b0011)) {
         const uint64_t promoOffset = flags & 0b0011;
-        uint64_t plane;
-        if constexpr (isWhite) {
-            // we map 7, 8, 9 to 64, 67, 70 and their promotions
-            plane = ((offset - 7) * 3) + 64 + promoOffset;
-        } else {
-            // we map -9, -8, -7 to 64, 67, 70 and their promotions
-            plane = ((offset + 9) * 3) + 64 + promoOffset;
-        }
+        const uint64_t plane = ((offset - 7) * 3) + 64 + promoOffset;
         return sourceFile * (NUM_ACTION_PLANES * 8) +
                sourceRank * NUM_ACTION_PLANES + plane;
     }

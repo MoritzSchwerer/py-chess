@@ -14,8 +14,6 @@ Move create_move(Bitboard from, Bitboard to, uint64_t flags) {
     return (from & 0x3f) | ((to & 0x3f) << 6) | ((flags & 0xf) << 12);
 }
 
-// TODO: make double check clear entire checkmask to zero
-// so no move will be possible
 template <bool isWhite>
 Bitboard getCheckMask(GameState state) {
     const Bitboard enemies = getEnemyPieces<isWhite>(state);
@@ -272,28 +270,33 @@ void getLegalPawnMoves(const GameState &state, Bitboard checkMask,
         const uint64_t sourceSquare = SquareOf(pawnsNoPromo);
         const Bitboard sourceBoard = 1ull << sourceSquare;
         Bitboard targetSquares = 0ull;
+        Bitboard pushMoveTargets = 0ull;
         targetSquares |=
             pawnAttackLeft<isWhite>(sourceBoard & ~FILE_A) & enemies;
         targetSquares |=
             pawnAttackRight<isWhite>(sourceBoard & ~FILE_H) & enemies;
-        targetSquares |= pawnPush1<isWhite>(sourceBoard) & ~enemyOrFriendly;
-        targetSquares |=
+        pushMoveTargets |= pawnPush1<isWhite>(sourceBoard) & ~enemyOrFriendly;
+        pushMoveTargets |=
             pawnPush1<isWhite>(
                 pawnPush1<isWhite>(sourceBoard & secondRank<isWhite>()) &
                 ~enemyOrFriendly) &
             ~enemyOrFriendly;
-
-        // this handles HV pinns
-        const Bitboard isPinnedHV =
-            broadcastSingleToMask(sourceBoard & pinMaskHV);
-        const Bitboard onPinHVMask = ~isPinnedHV | pinMaskHV;
-        targetSquares &= onPinHVMask;
 
         // this handles DG pinns
         const Bitboard isPinnedDG =
             broadcastSingleToMask(sourceBoard & pinMaskDG);
         const Bitboard onPinDGMask = ~isPinnedDG | pinMaskDG;
         targetSquares &= onPinDGMask;
+
+        // this removes single and double push moves if we are DG pinned
+        targetSquares |= pushMoveTargets;
+        targetSquares ^= pushMoveTargets & isPinnedDG;
+
+        // this handles HV pinns
+        const Bitboard isPinnedHV =
+            broadcastSingleToMask(sourceBoard & pinMaskHV);
+        const Bitboard onPinHVMask = ~isPinnedHV | pinMaskHV;
+        targetSquares &= onPinHVMask;
 
         // this handles checks
         targetSquares &= checkMask;

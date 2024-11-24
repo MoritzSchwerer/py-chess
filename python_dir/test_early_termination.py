@@ -3,7 +3,11 @@ from _chess_env import ChessGameEnv
 from pettingzoo.classic import chess_v6
 from tqdm import tqdm
 
-DATA_FILE = "chess_failure_cases.txt"  # Define the data file for failing test cases
+"""
+File format: {actions_to_get_here}; {stale/checkmate}, {can_claim_draw}, {ins_material};\n
+"""
+
+DATA_FILE = "chess_early_termination_cases.txt"
 
 
 def initialize_environments():
@@ -37,19 +41,21 @@ def check_termination(my_obs):
 def compare_actions(orig_actions, co_actions, actions_taken):
     """Compare available actions between custom and reference environments."""
     if list(orig_actions) != list(co_actions):
-        save_failure_case(actions_taken, co_actions)
+        # save_failure_case(actions_taken, co_actions)
         return False  # Return False to indicate a failure was logged
     return True
 
 
-def save_failure_case(actions_taken, co_actions):
+def save_failure_case(actions_taken, termination_info):
     """Save a failure case to the data file for later testing."""
     with open(DATA_FILE, "a") as f:
         # Write the actions leading up to the failure
         f.write(",".join(map(str, actions_taken)) + ";")
 
-        # Write expected actions from the correct environment
-        f.write(",".join(map(str, co_actions)) + "\n")
+        # Write the reason for the termination
+        ordered_keys = ["is_stale_or_checkmate", "can_claim_draw", "is_insufficient_material"]
+        termination_values = ",".join(str(int(termination_info[key])) for key in ordered_keys)
+        f.write(termination_values + "\n")
 
 
 def execute_actions(my_env, correct_env, orig_actions, co_actions, actions_taken):
@@ -77,11 +83,21 @@ def play_single_game(max_moves=500):
         )
         _, _, termination, truncation, _ = correct_env.last()
 
-        if check_termination(my_obs) or termination or truncation:
-            print(
-                f"Termination: my_res: {check_termination(my_obs)}, correct: {termination or truncation}"
-            )
-            return  # Game ended normally
+        actual_termination = termination or truncation
+        # at least one env did terminate
+        if my_obs.isTerminated or actual_termination:
+            if actual_termination and not my_obs.isTerminated:
+                print("Environment should have terminated but didn't")
+                termination_info = correct_env.get_termination_info()
+                save_failure_case(actions_taken, termination_info)
+                return
+            if actual_termination and my_obs.isTerminated:
+                print("Environment correctly terminated")
+                return
+            if not actual_termination and my_obs.isTerminated:
+                print("Environment terminated too early")
+                return
+            return
 
         if not compare_actions(orig_actions, co_actions, actions_taken):
             print(f"wrong actions: {move_count}")
@@ -102,4 +118,4 @@ def main(n_games=100, max_moves=500):
 
 
 if __name__ == "__main__":
-    main(n_games=100000)  # Specify the number of games to run
+    main(n_games=1000)  # Specify the number of games to run

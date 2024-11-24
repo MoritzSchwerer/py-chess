@@ -47,20 +47,21 @@ enable_testing()
 
 add_executable(test_core test/test_core.cpp)
 add_executable(test_adapter test/test_move_adapter.cpp)
-# add_executable(test_movegen test/test_movegen.cpp)
 add_executable(test_golden test/test_golden.cpp)
+add_executable(test_termination test/test_termination.cpp)
 
 target_link_libraries(test_core ${PROJECT_NAME})
 target_link_libraries(test_adapter ${PROJECT_NAME})
-# target_link_libraries(test_movegen ${PROJECT_NAME})
 target_link_libraries(test_golden ${PROJECT_NAME})
+target_link_libraries(test_termination ${PROJECT_NAME})
 
 target_compile_definitions(test_golden PRIVATE DATA_DIR="${CMAKE_SOURCE_DIR}/test/data")
+target_compile_definitions(test_termination PRIVATE DATA_DIR="${CMAKE_SOURCE_DIR}/test/data")
 
 add_test(NAME test_core COMMAND test_core)
 add_test(NAME test_adapter COMMAND test_adapter)
-# add_test(NAME test_movegen COMMAND test_movegen)
 add_test(NAME test_golden COMMAND test_golden)
+add_test(NAME test_termination COMMAND test_termination)
 
 
 add_custom_target(tests

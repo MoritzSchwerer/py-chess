@@ -551,7 +551,8 @@ inline TerminationInfo checkForTermination(const GameState& state) {
     }
 
     if (isStaleMate<isWhite>(state) || isDrawBy50Moves(state) ||
-        isDrawBy3FoldRepetition<isWhite>(state)) {
+        isDrawBy3FoldRepetition<isWhite>(state) ||
+        isInsufficientMaterial(state)) {
         return TerminationInfo{0, 0, true};
     }
 

@@ -3,6 +3,7 @@
 build/
 
 **/chess_failure_cases.txt
+**/chess_early_termination_cases.txt
 
 # cache folder
 .cache/

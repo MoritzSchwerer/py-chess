@@ -13,8 +13,10 @@
 struct TestCase {
     std::vector<int> actions_taken;
     bool isStaleCheck;
-    bool canClaimDraw;
     bool isInsufficientMaterial;
+    bool canClaimDraw;
+    bool fiftyMoves;
+    bool threefoldRep;
     int line;
 };
 
@@ -75,13 +77,15 @@ bool parseTestCase(const std::string& line, TestCase& test_case) {
     std::string bool_values_str = line.substr(separator_pos + 1);
     auto bool_tokens = splitString(bool_values_str, ',');
 
-    if (bool_tokens.size() != 3) {  // Ensure there are exactly 3 boolean values
+    if (bool_tokens.size() != 5) {
         return false;
     }
 
     test_case.isStaleCheck = (bool_tokens[0] == "1");
-    test_case.canClaimDraw = (bool_tokens[1] == "1");
-    test_case.isInsufficientMaterial = (bool_tokens[2] == "1");
+    test_case.isInsufficientMaterial = (bool_tokens[1] == "1");
+    test_case.canClaimDraw = (bool_tokens[2] == "1");
+    test_case.fiftyMoves = (bool_tokens[3] == "1");
+    test_case.threefoldRep = (bool_tokens[4] == "1");
 
     return true;
 }
@@ -217,21 +221,39 @@ TEST_CASE("Golden master tests for chess library actions", "[chess]") {
 
         // Get the list of available actions from the library at this state
         auto observation = env.observe();
-        // std::vector<bool> actionMask = observation.actionMask;
-        // std::vector<int> actions = actionMaskToIndices(actionMask);
         bool isTerminated = observation.isTerminated;
 
-        // if (isTerminated !=
-        //     (test_case.isInsufficientMaterial || test_case.canClaimDraw ||
-        //      test_case.isStaleCheck)) {
-        if (!isTerminated && test_case.isInsufficientMaterial) {
+        if (isTerminated &&
+            !(test_case.canClaimDraw || test_case.isInsufficientMaterial ||
+              test_case.isStaleCheck)) {
+            std::cout << "should not be terminated" << std::endl;
+            FAIL();
+        }
+
+        // if (!isTerminated && test_case.isInsufficientMaterial) {
+        //     std::cout << "Insufficient Material" << std::endl;
+        //     env.showBoard();
+        //     std::cout << "FEN: " << generateFEN(env.getState()) << std::endl;
+        //     FAIL();
+        // }
+        if (!isTerminated &&
+            (test_case.canClaimDraw || test_case.isInsufficientMaterial ||
+             test_case.isStaleCheck)) {
             env.showBoard();
             std::cout << "Insufficient Material: "
                       << test_case.isInsufficientMaterial << "\n"
-                      << "Can Claim Draw: " << test_case.canClaimDraw << "\n"
-                      << "Stale/Checkmate: " << test_case.isStaleCheck
+                      << "Stale/Checkmate: " << test_case.isStaleCheck << "\n"
+                      << "Can Claim Draw: " << test_case.canClaimDraw
                       << std::endl;
             std::cout << "FEN: " << generateFEN(env.getState()) << std::endl;
+
+            if (test_case.fiftyMoves) {
+                std::cout << "Fifty Moves Rule." << std::endl;
+            } else if (test_case.threefoldRep) {
+                std::cout << "Threefold Repetition." << std::endl;
+                std::cout << env.getState().positionHashes.size() << std::endl;
+            }
+
             FAIL();
         }
         SUCCEED();

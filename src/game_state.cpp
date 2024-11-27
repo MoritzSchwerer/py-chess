@@ -31,6 +31,7 @@ void GameState::addHistory(const PastGameState &pastState) {
     stateHistory[0] = pastState;
 
     const uint64_t posHash = pastState.positionHash;
+    // std::cout << "Adding: " << posHash << std::endl;
     int currentValue = this->positionHashes[posHash];
     this->positionHashes[posHash] = currentValue + 1;
 }

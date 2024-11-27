@@ -553,6 +553,10 @@ inline TerminationInfo checkForTermination(const GameState& state) {
     if (isStaleMate<isWhite>(state) || isDrawBy50Moves(state) ||
         isDrawBy3FoldRepetition<isWhite>(state) ||
         isInsufficientMaterial(state)) {
+        // std::cout << "Draw: " << isStaleMate<isWhite>(state)
+        //           << isDrawBy50Moves(state)
+        //           << isDrawBy3FoldRepetition<isWhite>(state)
+        //           << isInsufficientMaterial(state) << std::endl;
         return TerminationInfo{0, 0, true};
     }
 

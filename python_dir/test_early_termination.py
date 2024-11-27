@@ -4,7 +4,7 @@ from pettingzoo.classic import chess_v6
 from tqdm import tqdm
 
 """
-File format: {actions_to_get_here}; {stale/checkmate}, {can_claim_draw}, {ins_material};\n
+File format: {actions_to_get_here}; {stale/checkmate}, {ins_material},  {can_claim_draw}, {fifty_moves}, {threefold_rep};\n
 """
 
 DATA_FILE = "chess_early_termination_cases.txt"
@@ -53,7 +53,7 @@ def save_failure_case(actions_taken, termination_info):
         f.write(",".join(map(str, actions_taken)) + ";")
 
         # Write the reason for the termination
-        ordered_keys = ["is_stale_or_checkmate", "can_claim_draw", "is_insufficient_material"]
+        ordered_keys = ["is_stale_or_checkmate", "is_insufficient_material", "can_claim_draw", "fifty_moves", "threefold_rep"]
         termination_values = ",".join(str(int(termination_info[key])) for key in ordered_keys)
         f.write(termination_values + "\n")
 
@@ -65,6 +65,7 @@ def execute_actions(my_env, correct_env, orig_actions, co_actions, actions_taken
     try:
         my_env.step(orig_actions[action_idx])
     except:
+        print("got exception")
         res = False
     correct_env.step(co_actions[action_idx])
     actions_taken.append(co_actions[action_idx])
@@ -92,7 +93,7 @@ def play_single_game(max_moves=500):
                 save_failure_case(actions_taken, termination_info)
                 return
             if actual_termination and my_obs.isTerminated:
-                print("Environment correctly terminated")
+                # print("Environment correctly terminated")
                 return
             if not actual_termination and my_obs.isTerminated:
                 print("Environment terminated too early")
@@ -118,4 +119,4 @@ def main(n_games=100, max_moves=500):
 
 
 if __name__ == "__main__":
-    main(n_games=1000)  # Specify the number of games to run
+    main(n_games=10000)  # Specify the number of games to run

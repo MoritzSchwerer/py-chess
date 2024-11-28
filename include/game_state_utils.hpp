@@ -12,7 +12,7 @@ constexpr int OBSERVATION_SPACE_SIZE = 7104;
 constexpr int ACTION_SPACE_SIZE = 4672;
 constexpr int NUM_ACTION_PLANES = 73;
 constexpr int PLANE_SIZE = 64;
-constexpr int MAX_GAME_LENGTH = 500;
+constexpr int MAX_GAME_LENGTH = 250;  // this means that there is 500 half moves
 
 struct TerminationInfo {
     int32_t whiteReward;
@@ -297,7 +297,7 @@ template <bool isWhite>
 inline void updateMoveCount(GameState& state, bool isPawnMove, bool isCapture) {
     if (isPawnMove || isCapture) {
         state.halfMoveClock = 0;
-        // this can be better since moves that loose the right
+        // TODO: this can be better since moves that loose the right
         // to castle are also irreversible
         state.positionHashes.clear();
     } else {

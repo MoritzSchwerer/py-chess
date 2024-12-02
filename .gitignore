@@ -9,6 +9,9 @@ build/
 .cache/
 .mypy_cache/
 
+# perf
+perf.data*
+
 # Compiled Object files
 *.slo
 *.lo

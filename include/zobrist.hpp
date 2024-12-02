@@ -24,40 +24,52 @@ uint64_t rand64(uint64_t n) {
     return n;
 }
 
+constexpr std::array<uint64_t, 790> preCalcZobrist() {
+    std::array<uint64_t, 790> res;
+    for (uint64_t i = 0; i < 790; ++i) {
+        res[i] = rand64(i);
+    }
+    return res;
+}
+
+std::array<uint64_t, 790> zobristLookup = preCalcZobrist();
+
 template <bool isWhite>
 uint64_t hashMovingColor() {
     if constexpr (isWhite)
-        return rand64(movingColorOffset);
+        return zobristLookup[movingColorOffset];
     else
-        return rand64(movingColorOffset + 1);
+        return zobristLookup[movingColorOffset + 1];
 }
 
 uint64_t hashCastlingRights(const GameState& state) {
     uint64_t hash = 0ull;
     const GameStatus status = state.status;
     if (status.wKingC) {
-        hash ^= rand64(castlingOffset);
+        hash ^= zobristLookup[castlingOffset];
     }
     if (status.wQueenC) {
-        hash ^= rand64(castlingOffset + 1);
+        hash ^= zobristLookup[castlingOffset + 1];
     }
     if (status.bKingC) {
-        hash ^= rand64(castlingOffset + 2);
+        hash ^= zobristLookup[castlingOffset + 2];
     }
     if (status.bQueenC) {
-        hash ^= rand64(castlingOffset + 3);
+        hash ^= zobristLookup[castlingOffset + 3];
     }
     return hash;
 }
 
-uint64_t getPieceIndex(bool isWhite, uint64_t typeIndex, uint64_t square) {
-    if (isWhite) {
+template <bool isWhite>
+inline uint64_t getPieceIndex(uint64_t typeIndex, uint64_t square) {
+    if constexpr (isWhite) {
         return typeIndex * 64 + square;
     } else {
         return typeIndex * 64 + square + blackOffset;
     }
 }
 
+template <bool isWhite>
 uint64_t hashPieces(const GameState& state) {
     Bitboard w_pawn = state.w_pawn;
     Bitboard w_rook = state.w_rook;
@@ -76,74 +88,74 @@ uint64_t hashPieces(const GameState& state) {
     uint64_t hash = 0ull;
     Bitloop(w_pawn) {
         const uint64_t square = SquareOf(w_pawn);
-        const uint64_t index = getPieceIndex(true, 0ull, square);
-        hash ^= rand64(index);
+        const uint64_t index = getPieceIndex<isWhite>(0ull, square);
+        hash ^= zobristLookup[index];
     }
 
     Bitloop(w_rook) {
         const uint64_t square = SquareOf(w_rook);
-        const uint64_t index = getPieceIndex(true, 1ull, square);
-        hash ^= rand64(index);
+        const uint64_t index = getPieceIndex<isWhite>(1ull, square);
+        hash ^= zobristLookup[index];
     }
 
     Bitloop(w_knight) {
         const uint64_t square = SquareOf(w_knight);
-        const uint64_t index = getPieceIndex(true, 2ull, square);
-        hash ^= rand64(index);
+        const uint64_t index = getPieceIndex<isWhite>(2ull, square);
+        hash ^= zobristLookup[index];
     }
 
     Bitloop(w_bishop) {
         const uint64_t square = SquareOf(w_bishop);
-        const uint64_t index = getPieceIndex(true, 3ull, square);
-        hash ^= rand64(index);
+        const uint64_t index = getPieceIndex<isWhite>(3ull, square);
+        hash ^= zobristLookup[index];
     }
 
     Bitloop(w_queen) {
         const uint64_t square = SquareOf(w_queen);
-        const uint64_t index = getPieceIndex(true, 4ull, square);
-        hash ^= rand64(index);
+        const uint64_t index = getPieceIndex<isWhite>(4ull, square);
+        hash ^= zobristLookup[index];
     }
 
     Bitloop(w_king) {
         const uint64_t square = SquareOf(w_king);
-        const uint64_t index = getPieceIndex(true, 5ull, square);
-        hash ^= rand64(index);
+        const uint64_t index = getPieceIndex<isWhite>(5ull, square);
+        hash ^= zobristLookup[index];
     }
 
     Bitloop(b_pawn) {
         const uint64_t square = SquareOf(b_pawn);
-        const uint64_t index = getPieceIndex(false, 6ull, square);
-        hash ^= rand64(index);
+        const uint64_t index = getPieceIndex<isWhite>(6ull, square);
+        hash ^= zobristLookup[index];
     }
 
     Bitloop(b_rook) {
         const uint64_t square = SquareOf(b_rook);
-        const uint64_t index = getPieceIndex(false, 7ull, square);
-        hash ^= rand64(index);
+        const uint64_t index = getPieceIndex<isWhite>(7ull, square);
+        hash ^= zobristLookup[index];
     }
 
     Bitloop(b_knight) {
         const uint64_t square = SquareOf(b_knight);
-        const uint64_t index = getPieceIndex(false, 8ull, square);
-        hash ^= rand64(index);
+        const uint64_t index = getPieceIndex<isWhite>(8ull, square);
+        hash ^= zobristLookup[index];
     }
 
     Bitloop(b_bishop) {
         const uint64_t square = SquareOf(b_bishop);
-        const uint64_t index = getPieceIndex(false, 9ull, square);
-        hash ^= rand64(index);
+        const uint64_t index = getPieceIndex<isWhite>(9ull, square);
+        hash ^= zobristLookup[index];
     }
 
     Bitloop(b_queen) {
         const uint64_t square = SquareOf(b_queen);
-        const uint64_t index = getPieceIndex(false, 10ull, square);
-        hash ^= rand64(index);
+        const uint64_t index = getPieceIndex<isWhite>(10ull, square);
+        hash ^= zobristLookup[index];
     }
 
     Bitloop(b_king) {
         const uint64_t square = SquareOf(b_king);
-        const uint64_t index = getPieceIndex(true, 11ull, square);
-        hash ^= rand64(index);
+        const uint64_t index = getPieceIndex<isWhite>(11ull, square);
+        hash ^= zobristLookup[index];
     }
     return hash;
 }
@@ -159,7 +171,7 @@ uint64_t hashEnpassant(const GameState& state) {
         // if current color is white the pawn is black
         // so we add 8 to destinguish between white and black
         if constexpr (isWhite) enpassantIndex += 8;
-        return rand64(enpassantOffset + enpassantIndex);
+        return zobristLookup[enpassantOffset + enpassantIndex];
     }
     return 0ull;
 }
@@ -169,7 +181,7 @@ uint64_t hashBoard(const GameState& state) {
     uint64_t hash = 0ull;
     hash ^= hashMovingColor<isWhite>();
     hash ^= hashCastlingRights(state);
-    hash ^= hashPieces(state);
+    hash ^= hashPieces<isWhite>(state);
     hash ^= hashEnpassant<isWhite>(state);
     return hash;
 }

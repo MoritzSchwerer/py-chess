@@ -11,7 +11,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # compile flags
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mbmi -mbmi2 -std=c++2b -msse4.2 -O3")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++2b -march=native -flto -mbmi -mbmi2 -msse4.2 -O3")
 
 # Find Python and pybind11
 find_package(Python 3 REQUIRED COMPONENTS Interpreter Development)
@@ -40,6 +40,12 @@ add_executable(app src/main.cpp)
 
 # Link the executable to the chess_env library
 target_link_libraries(app ${PROJECT_NAME})
+
+# Add an executable for perft
+add_executable(perft src/perft.cpp)
+
+# Link the executable to the chess_env library
+target_link_libraries(perft ${PROJECT_NAME})
 
 # Add an executable for test/generate_golden_master.cpp
 add_executable(gen_golden_master test/generate_golden_master.cpp)

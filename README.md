@@ -28,3 +28,13 @@ This results in very fast hash function that has low enough collision rate for o
 As for the rest there is not much interesting stuff going on you use the move generation to validated
 incoming moves and to tell the agent which moves are legal and when you receive a move
 you just move around some state.
+
+
+### Optimizations
+
+#### Baseline
+Depth: 1 | Nodes: 20 | Time: 6.3929e-05 seconds
+Depth: 2 | Nodes: 400 | Time: 0.000321391 seconds
+Depth: 3 | Nodes: 8902 | Time: 0.00607044 seconds
+Depth: 4 | Nodes: 197281 | Time: 0.13826 seconds
+Depth: 5 | Nodes: 4865609 | Time: 3.18744 seconds

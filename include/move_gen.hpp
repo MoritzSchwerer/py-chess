@@ -15,7 +15,7 @@ Move create_move(Bitboard from, Bitboard to, uint64_t flags) {
 }
 
 template <bool isWhite>
-Bitboard getCheckMask(GameState state) {
+Bitboard getCheckMask(const GameState &state) {
     const Bitboard enemies = getEnemyPieces<isWhite>(state);
     const Bitboard friendlies = getFriendlyPieces<isWhite>(state);
     const Bitboard king = getKing<isWhite>(state);
@@ -136,12 +136,11 @@ Bitboard getCheckMask(GameState state) {
 }
 
 template <bool isWhite>
-Bitboard getPinMaskHV(GameState state) {
+Bitboard getPinMaskHV(const GameState &state, const Bitboard checkMask) {
     const Bitboard enemies = getEnemyPieces<isWhite>(state);
     const Bitboard friendlies = getFriendlyPieces<isWhite>(state);
     const Bitboard kingBoard = getKing<isWhite>(state);
     const uint64_t kingSquare = SquareOf(kingBoard);
-    const Bitboard checkMask = getCheckMask<isWhite>(state);
 
     Bitboard pinMask = 0ull;
     Bitboard rooks =
@@ -196,12 +195,11 @@ Bitboard getPinMaskHV(GameState state) {
 }
 
 template <bool isWhite>
-Bitboard getPinMaskDG(GameState state) {
+Bitboard getPinMaskDG(const GameState &state, const Bitboard checkMask) {
     const Bitboard enemies = getEnemyPieces<isWhite>(state);
     const Bitboard friendlies = getFriendlyPieces<isWhite>(state);
     const Bitboard kingBoard = getKing<isWhite>(state);
     const uint64_t kingSquare = SquareOf(kingBoard);
-    const Bitboard checkMask = getCheckMask<isWhite>(state);
 
     Bitboard pinMask = 0ull;
     Bitboard bishops =
@@ -459,6 +457,7 @@ void getLegalRookMoves(const GameState &state, Bitboard checkMask,
     }
 }
 
+// TODO: this can be merged into rook and bishops
 template <bool isWhite>
 void getLegalQueenMoves(const GameState &state, Bitboard checkMask,
                         Bitboard pinMaskHV, Bitboard pinMaskDG, Moves &moves) {
@@ -726,8 +725,8 @@ void getLegalEnpassantCaptures(const GameState &state, Moves &moves) {
 template <GameStatus status>
 Moves getLegalMovesTemplate(const GameState &state) {
     const Bitboard checkMask = getCheckMask<status.isWhite>(state);
-    const Bitboard pinMaskHV = getPinMaskHV<status.isWhite>(state);
-    const Bitboard pinMaskDG = getPinMaskDG<status.isWhite>(state);
+    const Bitboard pinMaskHV = getPinMaskHV<status.isWhite>(state, checkMask);
+    const Bitboard pinMaskDG = getPinMaskDG<status.isWhite>(state, checkMask);
     const Bitboard enemySeenSquares = getSeenSquares<!status.isWhite>(state);
 
     Moves moves;

@@ -29,6 +29,7 @@ uint64_t perft(int depth, ChessGameEnv& env) {
 
     const std::vector<bool> actionMask = obs.actionMask;
     const std::vector<int> moves = getActionsFromMask(actionMask);
+
     for (const auto& move : moves) {
         ChessGameEnv new_env = env;
         new_env.step(move);

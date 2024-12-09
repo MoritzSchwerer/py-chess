@@ -142,8 +142,6 @@ inline void handleCastling(GameState& state, uint8_t sourceSquare,
             state.b_rook |= 0b00100000ull << 56;
         }
     }
-    state.status.removeCastlingRights<isWhite>();
-    state.positionHashes.clear();
 }
 
 template <bool isWhite>
@@ -236,52 +234,6 @@ inline ActionInfo parseAction(Action action) {
 }
 
 template <bool isWhite>
-inline void updateGameState(GameState& state, ActionInfo ai) {
-    const uint16_t sourceSquare = ai.sourceSquare;
-    const uint16_t targetSquare = ai.targetSquare;
-    const PieceType promotion = ai.promotion;
-
-    const Bitboard sourceBoard = 1ull << sourceSquare;
-    const Bitboard targetBoard = 1ull << targetSquare;
-    const PieceType type = getPieceType<isWhite>(state, sourceSquare);
-
-    // need to do this to ensure the reset of the enpassant
-    const bool isEnpassantPossible = state.status.enpassant;
-    const Bitboard enpassantBoard = state.enpassant_board;
-    state.clearEnpassant();
-
-    // TODO: make this more readable
-    if (type == PieceType::King &&
-        isCastle<isWhite>(sourceSquare, targetSquare)) {
-        handleCastling<isWhite>(state, sourceSquare, targetSquare);
-        return;
-    }
-
-    updateCastlingRights<isWhite>(state, sourceBoard, targetBoard, type);
-
-    Bitboard& pieceBoard = getBitboardFromSquare<isWhite>(state, sourceBoard);
-    pieceBoard &= ~sourceBoard;
-
-    // handle move
-    moveToTargetPosition<isWhite>(state, pieceBoard, targetBoard, promotion,
-                                  type);
-
-    // handle enpassant take
-    if (type == PieceType::Pawn && isEnpassantPossible &&
-        targetBoard & enpassantBoard) {
-        handleEnpassantCapture<isWhite>(state, targetBoard);
-        return;
-    }
-
-    // handle enable enpassant
-    if (enablesEnpassant<isWhite>(state, sourceBoard, targetBoard, type)) {
-        state.setEnpassant(pawnPush1<isWhite>(sourceBoard));
-        return;
-    }
-    removeEnemyPiece<isWhite>(state, targetBoard);
-}
-
-template <bool isWhite>
 inline bool enablesEnpassant(GameState& state, Bitboard sourceBoard,
                              Bitboard targetBoard, PieceType type) {
     const Bitboard enemyPawns = getEnemyPawns<isWhite>(state);
@@ -297,28 +249,11 @@ template <bool isWhite>
 inline void updateMoveCount(GameState& state, bool isPawnMove, bool isCapture) {
     if (isPawnMove || isCapture) {
         state.halfMoveClock = 0;
-        // TODO: this can be better since moves that loose the right
-        // to castle are also irreversible
-        state.positionHashes.clear();
     } else {
         state.halfMoveClock++;
     }
 
     if constexpr (!isWhite) state.fullMoveCount++;
-}
-
-template <bool isWhite>
-inline void makeMove(GameState& state, Action action) {
-    ActionInfo actionInfo = parseAction<isWhite>(action);
-
-    const bool isPawnMove =
-        getPawns<isWhite>(state) & (1ull << actionInfo.sourceSquare);
-    const bool isCapture =
-        isEnemyPiece<isWhite>(state, actionInfo.targetSquare);
-    updateGameState<isWhite>(state, actionInfo);
-    updateMoveCount<isWhite>(state, isPawnMove, isCapture);
-
-    state.status.nextPlayer();
 }
 
 inline void fillObservationWithBoard(std::vector<bool>& obs,
@@ -432,56 +367,6 @@ inline void addEdgeFinder(std::vector<bool>& obs, int startOffset) {
     }
 }
 
-inline std::vector<bool> generateObservation(const GameState& state) {
-    constexpr int sideToMoveOffset = PLANE_SIZE * 4;
-    constexpr int moveClockOffset = PLANE_SIZE * 5;
-    constexpr int edgeFinderOffset = PLANE_SIZE * 6;
-    constexpr int currentBoardOffset = PLANE_SIZE * 7;
-    constexpr int boardSize = PLANE_SIZE * 13;
-    constexpr int numPastBoards = 7;
-
-    std::vector<bool> obs(OBSERVATION_SPACE_SIZE);
-
-    // castling
-    std::fill_n(obs.begin() + PLANE_SIZE * 0, PLANE_SIZE, state.status.wQueenC);
-    std::fill_n(obs.begin() + PLANE_SIZE * 1, PLANE_SIZE, state.status.wKingC);
-    std::fill_n(obs.begin() + PLANE_SIZE * 2, PLANE_SIZE, state.status.bQueenC);
-    std::fill_n(obs.begin() + PLANE_SIZE * 3, PLANE_SIZE, state.status.wKingC);
-
-    // side to move
-    std::fill_n(obs.begin() + sideToMoveOffset, PLANE_SIZE,
-                state.status.isWhite);
-
-    // 50 move clock
-    const int moveClockIndex = state.halfMoveClock;
-    obs[moveClockOffset + moveClockIndex] = true;
-
-    // edge finder
-    addEdgeFinder(obs, edgeFinderOffset);
-
-    const PastGameState curState = PastGameState(state);
-
-    // check if board existed before
-    bool is2FoldRep =
-        occursMoreThan(state.positionHashes, state.getPositionHash(), 0);
-    fillObservationWithBoard(obs, curState, currentBoardOffset,
-                             state.status.isWhite, is2FoldRep);
-
-    // past boards
-    for (int i = 0; i < numPastBoards; i++) {
-        const bool isWhite =
-            (i % 2 == 0) ? state.status.isWhite : !state.status.isWhite;
-        const PastGameState oldState = state.stateHistory[i];
-        const int startOffset = currentBoardOffset + (boardSize * (i + 1));
-
-        const uint64_t posHash = oldState.positionHash;
-        bool isRep = occursMoreThan(state.positionHashes, posHash, 1);
-
-        fillObservationWithBoard(obs, oldState, startOffset, isWhite, isRep);
-    }
-    return obs;
-}
-
 inline bool isRookMove(uint64_t sourceSquare, uint64_t targetSquare) {
     const Bitboard attacks = Lookup::perSquareRookAttacks[sourceSquare][0];
     return attacks & (1ull << targetSquare);
@@ -527,49 +412,4 @@ inline Action getMoveIndex(Move move) {
 
     return sourceFile * (NUM_ACTION_PLANES * 8) +
            sourceRank * NUM_ACTION_PLANES + plane;
-}
-
-template <bool isWhite>
-inline std::vector<bool> generateLegalActionMask(const GameState& state) {
-    Moves moves = Movegen::getLegalMoves(state);
-    std::vector<bool> legalActionMask(ACTION_SPACE_SIZE);
-    for (const Move& move : moves) {
-        const uint64_t moveIndex = getMoveIndex<isWhite>(move);
-        legalActionMask[moveIndex] = true;
-    }
-    return legalActionMask;
-}
-
-template <bool isWhite>
-inline TerminationInfo checkForTermination(const GameState& state) {
-    if (isCheckMate<isWhite>(state)) {
-        if constexpr (isWhite) {
-            return TerminationInfo{-1, 1, true};
-        } else {
-            return TerminationInfo{1, -1, true};
-        }
-    }
-
-    if (isStaleMate<isWhite>(state) || isDrawBy50Moves(state) ||
-        isDrawBy3FoldRepetition<isWhite>(state) ||
-        isInsufficientMaterial(state)) {
-        // std::cout << "Draw: " << isStaleMate<isWhite>(state)
-        //           << isDrawBy50Moves(state)
-        //           << isDrawBy3FoldRepetition<isWhite>(state)
-        //           << isInsufficientMaterial(state) << std::endl;
-        return TerminationInfo{0, 0, true};
-    }
-
-    if (state.fullMoveCount == (MAX_GAME_LENGTH + 1)) {
-        return TerminationInfo{0, 0, true};
-    }
-    return TerminationInfo{0, 0, false};
-}
-
-template <bool isWhite>
-inline ChessObservation observeTemplate(const GameState& state) {
-    const TerminationInfo term = checkForTermination<isWhite>(state);
-    return ChessObservation{
-        generateObservation(state), generateLegalActionMask<isWhite>(state),
-        term.whiteReward, term.blackReward, term.isTerminated};
 }

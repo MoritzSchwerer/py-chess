@@ -51,9 +51,6 @@ struct GameState {
     uint32_t halfMoveClock;
     uint32_t fullMoveCount;
 
-    std::array<PastGameState, 7> stateHistory;
-    std::map<uint64_t, int> positionHashes;
-
     GameStatus status;
 
     GameState()
@@ -72,8 +69,6 @@ struct GameState {
           enpassant_board(0ull),
           halfMoveClock(0ul),
           fullMoveCount(1ul),
-          stateHistory(),
-          positionHashes(),
           status() {
         status.isWhite = true;
         status.wKingC = true;
@@ -83,11 +78,10 @@ struct GameState {
         status.enpassant = false;
     }
 
-    void addHistory(const PastGameState &pastState);
     void setEnpassant(Bitboard enpassantBoard);
     void clearEnpassant();
-    uint64_t getPositionHash() const;
 };
 
+uint64_t getPositionHash(const GameState &state);
 GameState GameStateEmpty();
 GameState parseFen(const std::string &fen);

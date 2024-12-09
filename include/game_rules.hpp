@@ -56,10 +56,11 @@ bool occursMoreThan(const std::map<uint64_t, int>& map, uint64_t hash,
 }
 
 template <bool isWhite>
-bool isDrawBy3FoldRepetition(const GameState& state) {
-    const uint64_t posHash = state.getPositionHash();
+bool isDrawBy3FoldRepetition(const GameState& state,
+                             const std::map<uint64_t, int>& positionHashes) {
+    const uint64_t posHash = getPositionHash(state);
     // std::cout << state.positionHashes.size() << std::endl;
-    return occursMoreThan(state.positionHashes, posHash, 1);
+    return occursMoreThan(positionHashes, posHash, 1);
 }
 
 uint64_t getSquareColor(Bitboard board) {

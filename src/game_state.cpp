@@ -16,25 +16,7 @@ PastGameState::PastGameState(const GameState &state)
       b_bishop(state.b_bishop),
       b_queen(state.b_queen),
       b_king(state.b_king),
-      enpassant_board(state.enpassant_board) {
-    if (state.status.isWhite) {
-        positionHash = Zobrist::hashBoard<true>(state);
-    } else {
-        positionHash = Zobrist::hashBoard<false>(state);
-    }
-}
-
-void GameState::addHistory(const PastGameState &pastState) {
-    for (int i = 6; i > 0; i--) {
-        stateHistory[i] = stateHistory[i - 1];
-    }
-    stateHistory[0] = pastState;
-
-    const uint64_t posHash = pastState.positionHash;
-    // std::cout << "Adding: " << posHash << std::endl;
-    int currentValue = this->positionHashes[posHash];
-    this->positionHashes[posHash] = currentValue + 1;
-}
+      enpassant_board(state.enpassant_board) {}
 
 void GameState::setEnpassant(Bitboard enpassantBoard) {
     enpassant_board = enpassantBoard;
@@ -45,11 +27,12 @@ void GameState::clearEnpassant() {
     enpassant_board = 0ull;
     status.enpassant = false;
 }
-uint64_t GameState::getPositionHash() const {
-    if (status.isWhite) {
-        return Zobrist::hashBoard<true>(*this);
+
+uint64_t getPositionHash(const GameState &state) {
+    if (state.status.isWhite) {
+        return Zobrist::hashBoard<true>(state);
     } else {
-        return Zobrist::hashBoard<false>(*this);
+        return Zobrist::hashBoard<false>(state);
     }
 }
 
@@ -73,8 +56,6 @@ GameState GameStateEmpty() {
 
     gameState.halfMoveClock = 0ul;
     gameState.fullMoveCount = 1ul;
-
-    gameState.stateHistory = {};
 
     GameStatus status;
     status.isWhite = true;

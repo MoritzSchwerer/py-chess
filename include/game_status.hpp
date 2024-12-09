@@ -18,16 +18,16 @@ class GameStatus {
           bKingC(true),
           bQueenC(true),
           enpassant(false) {}
-    constexpr GameStatus(uint8_t pattern) {
-        isWhite = (pattern & 0b000001) != 0;
-        wKingC = (pattern & 0b000010) != 0;
-        wQueenC = (pattern & 0b000100) != 0;
-        bKingC = (pattern & 0b001000) != 0;
-        bQueenC = (pattern & 0b010000) != 0;
-        enpassant = (pattern & 0b100000) != 0;
-    }
-    GameStatus(bool isWhite, bool wKingC, bool wQueenC, bool bKingC,
-               bool bQueenC, bool enpassant)
+    constexpr GameStatus(uint8_t pattern)
+        : isWhite((pattern & 0b000001) != 0),
+          wKingC((pattern & 0b000010) != 0),
+          wQueenC((pattern & 0b000100) != 0),
+          bKingC((pattern & 0b001000) != 0),
+          bQueenC((pattern & 0b010000) != 0),
+          enpassant((pattern & 0b100000) != 0) {}
+
+    constexpr GameStatus(bool isWhite, bool wKingC, bool wQueenC, bool bKingC,
+                         bool bQueenC, bool enpassant)
         : isWhite(isWhite),
           wKingC(wKingC),
           wQueenC(wQueenC),

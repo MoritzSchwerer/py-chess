@@ -15,6 +15,7 @@ constexpr int PLANE_SIZE = 64;
 constexpr int MAX_GAME_LENGTH = 250;  // this means that there is 500 half moves
 
 struct TerminationInfo {
+   public:
     int32_t whiteReward;
     int32_t blackReward;
     bool isTerminated;

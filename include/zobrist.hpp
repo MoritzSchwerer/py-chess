@@ -13,7 +13,7 @@ constexpr uint64_t movingColorOffset = numPiecePositionColorElements;
 constexpr uint64_t castlingOffset = numPiecePositionColorElements + 2;
 constexpr uint64_t enpassantOffset = castlingOffset + 4;
 
-uint64_t rand64(uint64_t n) {
+constexpr uint64_t rand64(uint64_t n) {
     assert(n > 0);
     const uint64_t z = 0x9FB21C651E98DF25;
     n ^= ((n << 49) | (n >> 15)) ^ ((n << 24) | (n >> 40));
@@ -32,7 +32,7 @@ constexpr std::array<uint64_t, 790> preCalcZobrist() {
     return res;
 }
 
-std::array<uint64_t, 790> zobristLookup = preCalcZobrist();
+constexpr std::array<uint64_t, 790> zobristLookup = preCalcZobrist();
 
 template <bool isWhite>
 uint64_t hashMovingColor() {

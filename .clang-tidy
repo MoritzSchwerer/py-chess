@@ -1,0 +1,15 @@
+Checks: >
+  -*,
+  performance-*,
+  clang-analyzer-*,
+  cert-*,
+  modernize-*,
+  -modernize-use-trailing-return-type
+WarningsAsErrors: >
+  performance-*,
+  modernize-*,
+HeaderFilterRegex: '.*'
+AnalyzeTemporaryDtors: true
+CheckOptions:
+  - key:             performance-unnecessary-value-param.IncludeStyle
+    value:           'llvm'

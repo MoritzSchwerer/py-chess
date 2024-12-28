@@ -5,7 +5,7 @@
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(_chess_env, m) {
+PYBIND11_MODULE(chess_env, m) {
     py::class_<ChessGameEnv> chess_env(m, "ChessGameEnv");
 
     chess_env.def(py::init<>());

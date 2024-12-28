@@ -11,7 +11,7 @@ constexpr uint64_t bishopAttackMaskSize = 512;
 
 namespace Lookup {
 
-std::array<Bitboard, 64> generateKnightAttacks() {
+constexpr std::array<Bitboard, 64> generateKnightAttacks() {
     std::array<Bitboard, 64> squareAttacks;
     for (int i = 0; i < 64; i++) {
         Bitboard sourceSquare = 1ull << i;
@@ -38,9 +38,9 @@ std::array<Bitboard, 64> generateKnightAttacks() {
     return squareAttacks;
 }
 
-std::array<Bitboard, 64> knightAttacks = generateKnightAttacks();
+constexpr std::array<Bitboard, 64> knightAttacks = generateKnightAttacks();
 
-std::array<Bitboard, 64> generateBishopAttacks() {
+constexpr std::array<Bitboard, 64> generateBishopAttacks() {
     std::array<Bitboard, 64> squareAttacks;
     const Bitboard border = RANK_1 | RANK_8 | FILE_A | FILE_H;
     for (int ss = 0; ss < 64; ss++) {
@@ -67,10 +67,10 @@ std::array<Bitboard, 64> generateBishopAttacks() {
     return squareAttacks;
 }
 
-std::array<Bitboard, 64> bishopAttacks = generateBishopAttacks();
+constexpr std::array<Bitboard, 64> bishopAttacks = generateBishopAttacks();
 
-std::array<std::array<Bitboard, bishopAttackMaskSize>, 64>
-generatePerSquareBishopAttacks() {
+constexpr std::array<std::array<Bitboard, bishopAttackMaskSize>, 64>
+generatePerSquareBishopAttacks() noexcept {
     std::array<std::array<Bitboard, bishopAttackMaskSize>, 64> perSquareAttacks;
     const Bitboard border = RANK_1 | RANK_8 | FILE_A | FILE_H;
     for (uint64_t ss = 0; ss < 64; ss++) {
@@ -116,8 +116,8 @@ generatePerSquareBishopAttacks() {
 std::array<std::array<Bitboard, bishopAttackMaskSize>, 64>
     perSquareBishopAttacks = generatePerSquareBishopAttacks();
 
-std::array<std::array<Bitboard, bishopAttackMaskSize>, 64>
-generatePerSquareXrayBishopAttacks() {
+constexpr std::array<std::array<Bitboard, bishopAttackMaskSize>, 64>
+generatePerSquareXrayBishopAttacks() noexcept {
     std::array<std::array<Bitboard, bishopAttackMaskSize>, 64> perSquareAttacks;
     const Bitboard border = RANK_1 | RANK_8 | FILE_A | FILE_H;
     for (uint64_t ss = 0; ss < 64; ss++) {
@@ -171,7 +171,7 @@ generatePerSquareXrayBishopAttacks() {
 std::array<std::array<Bitboard, bishopAttackMaskSize>, 64>
     perSquareXrayBishopAttacks = generatePerSquareXrayBishopAttacks();
 
-std::array<Bitboard, 64> generateRookAttacks() {
+constexpr std::array<Bitboard, 64> generateRookAttacks() {
     std::array<Bitboard, 64> squareAttacks;
     const Bitboard hBorder = RANK_1 | RANK_8;
     const Bitboard vBorder = FILE_A | FILE_H;
@@ -199,10 +199,10 @@ std::array<Bitboard, 64> generateRookAttacks() {
     return squareAttacks;
 }
 
-std::array<Bitboard, 64> rookAttacks = generateRookAttacks();
+constexpr std::array<Bitboard, 64> rookAttacks = generateRookAttacks();
 
-std::array<std::array<Bitboard, rookAttackMaskSize>, 64>
-generatePerSquareRookAttacks() {
+constexpr std::array<std::array<Bitboard, rookAttackMaskSize>, 64>
+generatePerSquareRookAttacks() noexcept {
     std::array<std::array<Bitboard, rookAttackMaskSize>, 64> perSquareAttacks;
     const Bitboard hBorder = RANK_1 | RANK_8;
     const Bitboard vBorder = FILE_A | FILE_H;
@@ -246,7 +246,7 @@ std::array<std::array<Bitboard, rookAttackMaskSize>, 64> perSquareRookAttacks =
     generatePerSquareRookAttacks();
 
 std::array<std::array<Bitboard, rookAttackMaskSize>, 64>
-generatePerSquareXrayRookAttacks() {
+generatePerSquareXrayRookAttacks() noexcept {
     std::array<std::array<Bitboard, rookAttackMaskSize>, 64> perSquareAttacks;
     const Bitboard hBorder = RANK_1 | RANK_8;
     const Bitboard vBorder = FILE_A | FILE_H;
@@ -297,38 +297,38 @@ generatePerSquareXrayRookAttacks() {
 std::array<std::array<Bitboard, rookAttackMaskSize>, 64>
     perSquareXrayRookAttacks = generatePerSquareXrayRookAttacks();
 
-std::array<int8_t, 73> planeToOffsetWhite = {
+constexpr std::array<int8_t, 73> planeToOffsetWhite = {
     -9,  -1,  7,   -8,  8,   -7,  1,   9,   -18, -2,  14,  -16, 16,  -14, 2,
     18,  -27, -3,  21,  -24, 24,  -21, 3,   27,  -36, -4,  28,  -32, 32,  -28,
     4,   36,  -45, -5,  35,  -40, 40,  -35, 5,   45,  -54, -6,  42,  -48, 48,
     -42, 6,   54,  -63, -7,  49,  -56, 56,  -49, 7,   63,  -10, 6,   -17, 15,
     -15, 17,  -6,  10,  7,   7,   7,   8,   8,   8,   9,   9,   9};
 
-std::array<int8_t, 73> planeToOffsetBlack = {
+constexpr std::array<int8_t, 73> planeToOffsetBlack = {
     -9,  -1,  7,   -8,  8,   -7,  1,   9,   -18, -2,  14,  -16, 16,  -14, 2,
     18,  -27, -3,  21,  -24, 24,  -21, 3,   27,  -36, -4,  28,  -32, 32,  -28,
     4,   36,  -45, -5,  35,  -40, 40,  -35, 5,   45,  -54, -6,  42,  -48, 48,
     -42, 6,   54,  -63, -7,  49,  -56, 56,  -49, 7,   63,  -10, 6,   -17, 15,
     -15, 17,  -6,  10,  7,   7,   7,   8,   8,   8,   9,   9,   9};
 
-std::array<int8_t, 56> planeToOffsetRook = {
+constexpr std::array<int8_t, 56> planeToOffsetRook = {
     0,   -1, 0, -8, 8, 0,   1,  0, 0,   -2, 0, -16, 16, 0,   2,  0, 0,   -3, 0,
     -24, 24, 0, 3,  0, 0,   -4, 0, -32, 32, 0, 4,   0,  0,   -5, 0, -40, 40, 0,
     5,   0,  0, -6, 0, -48, 48, 0, 6,   0,  0, -7,  0,  -56, 56, 0, 7,   0,
 };
 
-std::array<int8_t, 56> planeToOffsetBishop = {
+constexpr std::array<int8_t, 56> planeToOffsetBishop = {
     -9, 0,   7,   0,   0,   -7, 0,   9,   -18, 0,   14,  0,   0,   -14,
     0,  18,  -27, 0,   21,  0,  0,   -21, 0,   27,  -36, 0,   28,  0,
     0,  -28, 0,   36,  -45, 0,  35,  0,   0,   -35, 0,   45,  -54, 0,
     42, 0,   0,   -42, 0,   54, -63, 0,   49,  0,   0,   -49, 0,   63,
 };
 
-std::array<int8_t, 8> planeToOffsetKnight = {
+constexpr std::array<int8_t, 8> planeToOffsetKnight = {
     -10, 6, -17, 15, -15, 17, -6, 10,
 };
 
-std::array<int8_t, 9> planeToOffsetPawnWhite = {
+constexpr std::array<int8_t, 9> planeToOffsetPawnWhite = {
     /* pawn moves (L, P, R) (N, B, R)*/ 7,
     7,
     7,
@@ -338,7 +338,7 @@ std::array<int8_t, 9> planeToOffsetPawnWhite = {
     9,
     9,
     9};
-std::array<int8_t, 9> planeToOffsetPawnBlack = {
+constexpr std::array<int8_t, 9> planeToOffsetPawnBlack = {
     /* pawn moves (L, P, R) (N, B, R)*/ -9,
     -9,
     -9,
@@ -349,7 +349,7 @@ std::array<int8_t, 9> planeToOffsetPawnBlack = {
     -7,
     -7};
 
-std::array<uint8_t, 128> generateOffsetToPlaneRook() {
+constexpr std::array<uint8_t, 128> generateOffsetToPlaneRook() noexcept {
     std::array<uint8_t, 128> inverted;
     // we do + 64 to ensure that we don't occur negative values
     for (int i = 0; i < 56; i++) {
@@ -363,7 +363,7 @@ std::array<uint8_t, 128> generateOffsetToPlaneRook() {
     return inverted;
 }
 
-std::array<uint8_t, 128> generateOffsetToPlaneBishop() {
+constexpr std::array<uint8_t, 128> generateOffsetToPlaneBishop() noexcept {
     std::array<uint8_t, 128> inverted;
     // we do + 64 to ensure that we don't occur negative values
     for (int i = 0; i < 56; i++) {
@@ -377,7 +377,7 @@ std::array<uint8_t, 128> generateOffsetToPlaneBishop() {
     return inverted;
 }
 
-std::array<uint8_t, 36> generateOffsetToPlaneKnight() {
+constexpr std::array<uint8_t, 36> generateOffsetToPlaneKnight() noexcept {
     std::array<uint8_t, 36> inverted;
     // we do + 18 to ensure that we don't occur negative values
     for (int i = 0; i < 8; i++) {
@@ -416,14 +416,14 @@ int8_t getOffsetFromPlane(uint8_t plane) {
 }
 
 // offset + 64 to make it non negative
-int8_t getPlaneRook(int8_t offset) { return offsetToPlaneRook[offset + 64]; }
+uint8_t getPlaneRook(int8_t offset) { return offsetToPlaneRook[offset + 64]; }
 
-int8_t getPlaneBishop(int8_t offset) {
+uint8_t getPlaneBishop(int8_t offset) {
     return offsetToPlaneBishop[offset + 64];
 }
 
 // 56 here since the queen moves are the first 56 and after
-int8_t getPlaneKnight(int8_t offset) {
+uint8_t getPlaneKnight(int8_t offset) {
     return 56 + offsetToPlaneKnight[offset + 18];
 }
 

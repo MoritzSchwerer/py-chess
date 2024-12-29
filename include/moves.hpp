@@ -8,9 +8,7 @@
 #include "game_state.hpp"
 #include "types.hpp"
 
-// #define SquareOf(X) _tzcnt_u64(X)
 #define Bitloop(X) for (; X; X = _blsr_u64(X))
-
 inline uint64_t SquareOf(uint64_t x) { return _tzcnt_u64(x); }
 
 // this should set all bits to the same value

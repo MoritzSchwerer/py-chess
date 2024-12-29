@@ -11,7 +11,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # compile flags
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++2b -march=native -mtune=native -flto -mbmi -mbmi2 -msse4.2 -O3 -ftree-vectorize -ffast-math")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++2b -march=native -flto -O3 -ftree-vectorize -ffast-math")
 
 # Find Python and pybind11
 find_package(Python 3 REQUIRED COMPONENTS Interpreter Development)
